@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   MailIcon,
-  CheckInCircleIcon,
   BackIcon,
   LockIcon,
   EyeIcon,
@@ -30,7 +29,8 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(60);
-  const [canResend, setCanResend] = useState(false);
+
+  const canResend = timer === 0;
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -45,8 +45,6 @@ export default function ForgotPasswordPage() {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
       }, 1000);
-    } else if (timer === 0) {
-      setCanResend(true);
     }
     return () => clearInterval(interval);
   }, [step, timer]);
@@ -69,7 +67,6 @@ export default function ForgotPasswordPage() {
       if (email.toLowerCase() === "admin@ozen-et.com") {
         setStep("VERIFY_CODE");
         setTimer(60);
-        setCanResend(false);
       } else {
         setError("This email address is not registered in our admin system.");
       }
@@ -133,7 +130,6 @@ export default function ForgotPasswordPage() {
     if (!canResend) return;
     setError("");
     setTimer(60);
-    setCanResend(false);
     setCode(Array(6).fill(""));
     otpInputRefs.current[0]?.focus();
     // In a real app we'd trigger api to resend email
@@ -203,7 +199,7 @@ export default function ForgotPasswordPage() {
               Reset Password
             </h2>
             <p className="text-sm font-nunito text-slate-500 mb-8 text-center max-w-[300px] leading-relaxed">
-              Enter your admin email and we'll send you a verification code.
+              {"Enter your admin email and we'll send you a verification code."}
             </p>
 
             {error && (

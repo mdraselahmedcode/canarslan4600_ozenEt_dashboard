@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { CheckInCircleIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +35,9 @@ export default function LoginPage() {
       setIsLoading(false);
       if (email === "admin@ozen-et.com" && password === "admin123") {
         setIsSuccess(true);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1200);
       } else {
         setError("Invalid email address or password.");
       }
