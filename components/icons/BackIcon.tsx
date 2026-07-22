@@ -1,0 +1,33 @@
+import React from "react";
+
+interface IconProps {
+  width?: number;
+  height?: number;
+  color?: string;
+  className?: string;
+}
+
+export function BackIcon({
+  width = 18,
+  height = 18,
+  color = "currentColor",
+  className = "",
+}: IconProps) {
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <line x1="19" y1="12" x2="5" y2="12" />
+      <polyline points="12 19 5 12 12 5" />
+    </svg>
+  );
+}

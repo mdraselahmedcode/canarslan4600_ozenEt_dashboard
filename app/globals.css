@@ -1,26 +1,270 @@
 @import "tailwindcss";
 
+/* ------------------ FONTS DEFINITION ------------------ */
+
+/* Nunito Fonts */
+@font-face {
+  font-family: 'Nunito-Regular';
+  src: url('/fonts/Nunito-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-Italic';
+  src: url('/fonts/Nunito-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-Medium';
+  src: url('/fonts/Nunito-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-MediumItalic';
+  src: url('/fonts/Nunito-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-SemiBold';
+  src: url('/fonts/Nunito-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-SemiBoldItalic';
+  src: url('/fonts/Nunito-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-Bold';
+  src: url('/fonts/Nunito-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-BoldItalic';
+  src: url('/fonts/Nunito-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-ExtraBold';
+  src: url('/fonts/Nunito-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Nunito-ExtraBoldItalic';
+  src: url('/fonts/Nunito-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Montserrat Fonts */
+@font-face {
+  font-family: 'Montserrat-Regular';
+  src: url('/fonts/Montserrat-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-Italic';
+  src: url('/fonts/Montserrat-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-Medium';
+  src: url('/fonts/Montserrat-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-MediumItalic';
+  src: url('/fonts/Montserrat-MediumItalic.ttf') format('truetype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-SemiBold';
+  src: url('/fonts/Montserrat-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-SemiBoldItalic';
+  src: url('/fonts/Montserrat-SemiBoldItalic.ttf') format('truetype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-Bold';
+  src: url('/fonts/Montserrat-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-BoldItalic';
+  src: url('/fonts/Montserrat-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-ExtraBold';
+  src: url('/fonts/Montserrat-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-ExtraBoldItalic';
+  src: url('/fonts/Montserrat-ExtraBoldItalic.ttf') format('truetype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat-Black';
+  src: url('/fonts/Montserrat-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Syne Fonts */
+@font-face {
+  font-family: 'Syne-Regular';
+  src: url('/fonts/Syne-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Syne-Medium';
+  src: url('/fonts/Syne-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Syne-SemiBold';
+  src: url('/fonts/Syne-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Syne-Bold';
+  src: url('/fonts/Syne-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Syne-ExtraBold';
+  src: url('/fonts/Syne-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ------------------ TAILWIND THEME CONFIG ------------------ */
+@theme {
+  /* Font Family Mappings */
+  --font-nunito: 'Nunito-Regular', sans-serif;
+  --font-nunito-italic: 'Nunito-Italic', sans-serif;
+  --font-nunito-medium: 'Nunito-Medium', sans-serif;
+  --font-nunito-medium-italic: 'Nunito-MediumItalic', sans-serif;
+  --font-nunito-semi: 'Nunito-SemiBold', sans-serif;
+  --font-nunito-semi-italic: 'Nunito-SemiBoldItalic', sans-serif;
+  --font-nunito-bold: 'Nunito-Bold', sans-serif;
+  --font-nunito-bold-italic: 'Nunito-BoldItalic', sans-serif;
+  --font-nunito-extra-bold: 'Nunito-ExtraBold', sans-serif;
+  --font-nunito-extra-bold-italic: 'Nunito-ExtraBoldItalic', sans-serif;
+
+  --font-montserrat: 'Montserrat-Regular', sans-serif;
+  --font-montserrat-italic: 'Montserrat-Italic', sans-serif;
+  --font-montserrat-medium: 'Montserrat-Medium', sans-serif;
+  --font-montserrat-medium-italic: 'Montserrat-MediumItalic', sans-serif;
+  --font-montserrat-semi: 'Montserrat-SemiBold', sans-serif;
+  --font-montserrat-semi-italic: 'Montserrat-SemiBoldItalic', sans-serif;
+  --font-montserrat-bold: 'Montserrat-Bold', sans-serif;
+  --font-montserrat-bold-italic: 'Montserrat-BoldItalic', sans-serif;
+  --font-montserrat-extra-bold: 'Montserrat-ExtraBold', sans-serif;
+  --font-montserrat-extra-bold-italic: 'Montserrat-ExtraBoldItalic', sans-serif;
+  --font-montserrat-black: 'Montserrat-Black', sans-serif;
+
+  --font-syne: 'Syne-Regular', sans-serif;
+  --font-syne-medium: 'Syne-Medium', sans-serif;
+  --font-syne-semi: 'Syne-SemiBold', sans-serif;
+  --font-syne-bold: 'Syne-Bold', sans-serif;
+  --font-syne-extra-bold: 'Syne-ExtraBold', sans-serif;
+
+  /* Custom Color Palette (based on tailwind.config.js from user) */
+  --color-custom-background: #EEE6E1;
+  --color-customer-bg: #FFFFFF;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #6B7280;
+  --color-text-placeholder: #7F8B85;
+  --color-link: #B91C1C;
+  --color-button-primary: #2B7FFF;
+  --color-brand-primary: #C4202B;
+  --color-primary: #A5CC25;
+  --color-status-error: #EF4444;
+  --color-success: #22C55E;
+  --color-input-label: #374151;
+  --color-inputborder: #2E3431;
+
+  --color-blue-primary: #2C80EC;
+  --color-text-white: #FBFBFC;
+  --color-text-black: #000000;
+  --color-text-dark: #323135;
+  --color-text-light: #71717A;
+  --color-text-lighter-dark: #474747;
+  --color-surfrace: #EFF6FF;
+
+  --color-success-alt: #10B981;
+  --color-error-alt: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+
+  /* Custom Spacing Rules */
+  --spacing-container-sm: 16px;
+  --spacing-container-lg: 20px;
+  --spacing-screen-padding: 60px;
+  --spacing-button-padding: 13px;
+}
+
+/* Base styles configuration */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #F8FAFC;
+  --foreground: #323135;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Nunito-Regular', sans-serif;
 }
