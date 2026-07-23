@@ -25,6 +25,27 @@ export default function OrderDetailPage({ params }: PageProps) {
     }
   }, [id]);
 
+  // Status Update State & Handler
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+
+  const handleStatusUpdate = () => {
+    if (!selectedStatus || !order) return;
+
+    const saved = localStorage.getItem("ozenet_orders");
+    if (saved) {
+      const list: Order[] = JSON.parse(saved);
+      const updatedList = list.map((o) =>
+        o.id === order.id
+          ? { ...o, status: selectedStatus as Order["status"] }
+          : o,
+      );
+      localStorage.setItem("ozenet_orders", JSON.stringify(updatedList));
+      setOrder({ ...order, status: selectedStatus as Order["status"] });
+      setSelectedStatus(""); // reset select
+      alert("Order status updated successfully!");
+    }
+  };
+
   if (!order) {
     return (
       <div className="p-8 text-center font-nunito">
@@ -146,6 +167,62 @@ export default function OrderDetailPage({ params }: PageProps) {
                   {order.address}
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Update Order Status Card */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+            <h2 className="text-sm font-nunito-bold text-slate-800 mb-4">
+              Update Order Status
+            </h2>
+            <div className="space-y-4">
+              <div className="relative">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="appearance-none w-full pl-4 pr-10 py-2.5 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-700 bg-white cursor-pointer shadow-sm"
+                >
+                  <option value="" disabled>
+                    Select new status...
+                  </option>
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Preparing">Preparing</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+                <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                  <svg
+                    width="10"
+                    height="6"
+                    viewBox="0 0 10 6"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M1 1L5 5L9 1"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <button
+                onClick={handleStatusUpdate}
+                disabled={!selectedStatus}
+                className={`w-full py-2.5 rounded-xl font-nunito-semibold text-sm text-center transition-all duration-200 select-none
+                  ${
+                    selectedStatus
+                      ? "bg-brand-primary hover:bg-brand-primary/95 text-white shadow-sm cursor-pointer active:scale-[0.98]"
+                      : "bg-[#F1F5F9]/60 border border-slate-100 text-slate-400 cursor-not-allowed"
+                  }
+                `}
+              >
+                Update Status
+              </button>
             </div>
           </div>
         </div>
