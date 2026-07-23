@@ -1,8 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import {
+  useGetAllProductsQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+  useUpdateProductStatusMutation,
+} from "@/store/api/productApi";
+import { useGetAllCategoriesQuery } from "@/store/api/categoryApi";
 import {
   EyeIcon,
   PenIcon,
@@ -13,7 +21,8 @@ import {
 export interface Product {
   id: string;
   name: string;
-  category: "Beef" | "Chicken" | "Lamb" | "Frozen" | "Processed Meats";
+  category: string;
+  categoryId?: string;
   defaultPrice: number;
   unit: string;
   packSize: string;
@@ -22,223 +31,60 @@ export interface Product {
   image: string;
   isFeatured?: boolean;
   isNew?: boolean;
+  isActive?: boolean;
 }
 
-const initialProducts: Product[] = [
-  {
-    id: "1",
-    name: "Beef Tenderloin",
-    category: "Beef",
-    defaultPrice: 38.5,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Premium tender beef cut from the loin, perfect for pan-searing or grilling.",
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
-    isFeatured: true,
-  },
-  {
-    id: "2",
-    name: "Diced Beef",
-    category: "Beef",
-    defaultPrice: 29.8,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Fresh beef cut into bite-sized cubes. Perfect for stews, casseroles, and kababs.",
-    image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "3",
-    name: "Ground Beef",
-    category: "Beef",
-    defaultPrice: 24.9,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Freshly ground beef with a lean-to-fat ratio ideal for burgers, meatballs, and sauces.",
-    image: "https://images.unsplash.com/photo-1529692236671-f1f6e946a88a?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "4",
-    name: "Ribeye Steak",
-    category: "Beef",
-    defaultPrice: 42.0,
-    unit: "kg",
-    packSize: "250g / portion",
-    availability: "Limited",
-    description: "Highly marbled ribeye cut providing rich flavor and tender texture.",
-    image: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&q=80&w=600",
-    isNew: true,
-    isFeatured: true,
-  },
-  {
-    id: "5",
-    name: "Beef Chops",
-    category: "Beef",
-    defaultPrice: 35.6,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Bone-in beef chops with excellent marbling for grilling or slow-roasting.",
-    image: "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "6",
-    name: "Chicken Breast",
-    category: "Chicken",
-    defaultPrice: 11.2,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Lean and tender boneless skinless chicken breasts, ideal for a wide variety of meals.",
-    image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&q=80&w=600",
-    isFeatured: true,
-  },
-  {
-    id: "7",
-    name: "Whole Chicken",
-    category: "Chicken",
-    defaultPrice: 9.8,
-    unit: "each",
-    packSize: "1.5-2 kg / each",
-    availability: "In Stock",
-    description: "Whole fresh chicken, perfect for roasting, rotisserie, or preparing soups.",
-    image: "https://images.unsplash.com/photo-1587593817642-8b98df728645?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "8",
-    name: "Chicken Thighs",
-    category: "Chicken",
-    defaultPrice: 10.5,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Juicy bone-in chicken thighs, great for baking, slow cooking, or BBQ.",
-    image: "https://images.unsplash.com/photo-1606728035253-49e196302c42?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "9",
-    name: "Chicken Wings",
-    category: "Chicken",
-    defaultPrice: 8.9,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "In Stock",
-    description: "Fresh chicken wings, perfect for deep frying or baking with hot sauce.",
-    image: "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&q=80&w=600",
-    isNew: true,
-  },
-  {
-    id: "10",
-    name: "Lamb Leg",
-    category: "Lamb",
-    defaultPrice: 54.0,
-    unit: "each",
-    packSize: "2-3 kg / each",
-    availability: "In Stock",
-    description: "Succulent bone-in lamb leg, highly tender and perfect for holiday roasting.",
-    image: "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=600",
-    isFeatured: true,
-  },
-  {
-    id: "11",
-    name: "Lamb Shoulder",
-    category: "Lamb",
-    defaultPrice: 49.5,
-    unit: "each",
-    packSize: "1.5-2 kg / each",
-    availability: "In Stock",
-    description: "Richly flavored lamb shoulder, ideal for slow roasting or braising.",
-    image: "https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "12",
-    name: "Lamb Ribs",
-    category: "Lamb",
-    defaultPrice: 46.0,
-    unit: "kg",
-    packSize: "1 kg",
-    availability: "Limited",
-    description: "Tender lamb rib chops with a deep, rich flavor profile for quick grilling.",
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "13",
-    name: "Frozen Beef",
-    category: "Frozen",
-    defaultPrice: 22.5,
-    unit: "case",
-    packSize: "5 kg / case",
-    availability: "In Stock",
-    description: "Frozen wholesale cuts of beef, blast-frozen to seal freshness and texture.",
-    image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "14",
-    name: "Frozen Chicken Breast",
-    category: "Frozen",
-    defaultPrice: 7.8,
-    unit: "case",
-    packSize: "10 kg / case",
-    availability: "In Stock",
-    description: "Individually quick frozen chicken breasts in bulk packaging.",
-    image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "15",
-    name: "Frozen Lamb",
-    category: "Frozen",
-    defaultPrice: 41.0,
-    unit: "case",
-    packSize: "5 kg / case",
-    availability: "Out of Stock",
-    description: "Wholesale frozen lamb cuts, preserved in optimal cold conditions.",
-    image: "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "16",
-    name: "Beef Sausage",
-    category: "Processed Meats",
-    defaultPrice: 22.8,
-    unit: "each",
-    packSize: "500 g / each",
-    availability: "In Stock",
-    description: "Fresh beef sausages spiced with traditional Turkish herbs.",
-    image: "https://images.unsplash.com/photo-1541048611353-a66f8b32f917?auto=format&fit=crop&q=80&w=600",
-    isFeatured: true,
-  },
-  {
-    id: "17",
-    name: "Butcher's Meatballs",
-    category: "Processed Meats",
-    defaultPrice: 20.0,
-    unit: "pack",
-    packSize: "1 kg / pack",
-    availability: "In Stock",
-    description: "Classic Turkish butcher meatballs (kofte) prepared with onions and species.",
-    image: "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&q=80&w=600",
-  },
-  {
-    id: "18",
-    name: "Cured Beef (Pastirma)",
-    category: "Processed Meats",
-    defaultPrice: 38.0,
-    unit: "each",
-    packSize: "200 g / each",
-    availability: "In Stock",
-    description: "Highly seasoned, air-dried cured beef coated in garlic cumin paste.",
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600",
-    isNew: true,
-  },
-];
+const mapUiStatusToApi = (uiStatus: string) => {
+  if (uiStatus === "In Stock") return "in_stock";
+  if (uiStatus === "Limited") return "limited_stock";
+  if (uiStatus === "Out of Stock") return "out_of_stock";
+  return uiStatus;
+};
 
 export default function ProductsPage() {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [categoryFilter, statusFilter]);
+
+  // RTK Queries
+  const { data: categoriesData } = useGetAllCategoriesQuery();
+  const dbCategories = categoriesData?.data?.result || [];
+
+  const { data: apiData, isLoading: isGetLoading } = useGetAllProductsQuery({
+    page,
+    limit,
+    searchTerm: debouncedSearch,
+    category: categoryFilter === "All" ? undefined : categoryFilter,
+    availability: statusFilter === "All" ? undefined : mapUiStatusToApi(statusFilter),
+  });
+
+  // Query all to calculate exact counts across the whole database
+  const { data: allProductsData } = useGetAllProductsQuery({ limit: 1000 });
+  const allProductsList = allProductsData?.data?.result || [];
+
+  const [createProduct] = useCreateProductMutation();
+  const [updateProduct] = useUpdateProductMutation();
+  const [deleteProduct] = useDeleteProductMutation();
+  const [updateProductStatus] = useUpdateProductStatusMutation();
 
   // Add/Edit Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -247,48 +93,55 @@ export default function ProductsPage() {
 
   // Form States
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<Product["category"]>("Beef");
+  const [category, setCategory] = useState("");
   const [availability, setAvailability] = useState<Product["availability"]>("In Stock");
   const [defaultPrice, setDefaultPrice] = useState("");
-  const [unit, setUnit] = useState("kg");
+  const [unit, setUnit] = useState("per_kg");
   const [packSize, setPackSize] = useState("");
   const [description, setDescription] = useState("");
   const [productImage, setProductImage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Delete Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
-  // Load from LocalStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("ozenet_products");
-    if (saved) {
-      setProducts(JSON.parse(saved));
-    } else {
-      localStorage.setItem("ozenet_products", JSON.stringify(initialProducts));
-      setProducts(initialProducts);
-    }
-  }, []);
+  const categories: Product[] = useMemo(() => {
+    return (apiData?.data?.result || []).map((p) => ({
+      id: p._id,
+      name: p.name,
+      category: p.category?.name || "Uncategorized",
+      categoryId: p.category?._id || "",
+      defaultPrice: p.price,
+      unit: p.unit,
+      packSize: p.packSize,
+      availability: p.availability === "in_stock" ? "In Stock" : p.availability === "limited_stock" ? "Limited" : "Out of Stock",
+      description: p.description,
+      image: p.image,
+      isFeatured: p.isFeatured,
+      isActive: p.isActive,
+    }));
+  }, [apiData]);
 
-  // Save list to localstorage helper
-  const saveToLocalStorage = (list: Product[]) => {
-    localStorage.setItem("ozenet_products", JSON.stringify(list));
-    setProducts(list);
-  };
+  const meta = apiData?.data?.meta;
+  const totalItems = meta?.total || 0;
+  const totalPages = meta?.totalPage || 1;
+  const currentPage = meta?.page || 1;
 
   const handleAddClick = () => {
     setModalMode("add");
     setEditingProduct(null);
     setName("");
-    setCategory("Beef");
+    setCategory(dbCategories[0]?._id || "");
     setAvailability("In Stock");
     setDefaultPrice("");
-    setUnit("kg");
+    setUnit("per_kg");
     setPackSize("");
     setDescription("");
     setProductImage(null);
     setPreviewUrl(null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -296,7 +149,7 @@ export default function ProductsPage() {
     setModalMode("edit");
     setEditingProduct(p);
     setName(p.name);
-    setCategory(p.category);
+    setCategory(p.categoryId || "");
     setAvailability(p.availability);
     setDefaultPrice(String(p.defaultPrice));
     setUnit(p.unit);
@@ -304,6 +157,7 @@ export default function ProductsPage() {
     setDescription(p.description);
     setProductImage(p.image);
     setPreviewUrl(null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -312,13 +166,23 @@ export default function ProductsPage() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingProductId) {
-      const updated = products.filter((p) => p.id !== deletingProductId);
-      saveToLocalStorage(updated);
+      setIsSaving(true);
+      try {
+        const response = await deleteProduct(deletingProductId).unwrap();
+        if (!response.success) {
+          alert(response.message || "Failed to delete product.");
+        }
+      } catch (err: any) {
+        console.error("Delete error:", err);
+        alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+      } finally {
+        setIsSaving(false);
+        setIsDeleteModalOpen(false);
+        setDeletingProductId(null);
+      }
     }
-    setIsDeleteModalOpen(false);
-    setDeletingProductId(null);
   };
 
   const cancelDelete = () => {
@@ -330,11 +194,13 @@ export default function ProductsPage() {
     setIsModalOpen(false);
     setEditingProduct(null);
     setPreviewUrl(null);
+    setSelectedFile(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
@@ -348,12 +214,22 @@ export default function ProductsPage() {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
   };
 
-  const handleSave = () => {
+  const handleToggleStatus = async (id: string) => {
+    try {
+      await updateProductStatus(id).unwrap();
+    } catch (err: any) {
+      console.error("Toggle status error:", err);
+      alert(err?.data?.message || err?.message || "Failed to update product status.");
+    }
+  };
+
+  const handleSave = async () => {
     if (!name.trim() || !defaultPrice) {
       alert("Name and Price are required.");
       return;
@@ -365,59 +241,60 @@ export default function ProductsPage() {
       return;
     }
 
-    const finalImage =
-      previewUrl ||
-      productImage ||
-      "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=600";
-
-    if (modalMode === "add") {
-      const newProduct: Product = {
-        id: String(Date.now()),
-        name,
-        category,
-        defaultPrice: priceNum,
-        unit,
-        packSize: packSize || "1 kg",
-        availability,
-        description: description || "Fresh meat product, processed under strict quality controls.",
-        image: finalImage,
-      };
-      const updated = [...products, newProduct];
-      saveToLocalStorage(updated);
-    } else if (modalMode === "edit" && editingProduct) {
-      const updated = products.map((p) =>
-        p.id === editingProduct.id
-          ? {
-              ...p,
-              name,
-              category,
-              defaultPrice: priceNum,
-              unit,
-              packSize,
-              availability,
-              description,
-              image: finalImage,
-            }
-          : p
+    setIsSaving(true);
+    try {
+      const formData = new FormData();
+      if (selectedFile) {
+        formData.append("product_image", selectedFile);
+      }
+      formData.append(
+        "data",
+        JSON.stringify({
+          name,
+          category,
+          availability: availability === "In Stock" ? "in_stock" : availability === "Limited" ? "limited_stock" : "out_of_stock",
+          price: priceNum,
+          description: description || "Fresh meat product",
+          unit,
+          packSize: packSize || "1 kg",
+          isFeatured: editingProduct ? editingProduct.isFeatured : true,
+          isActive: editingProduct ? editingProduct.isActive : true,
+        })
       );
-      saveToLocalStorage(updated);
-    }
 
-    closeModal();
+      if (modalMode === "add") {
+        const response = await createProduct(formData).unwrap();
+        if (response.success) {
+          closeModal();
+        } else {
+          alert(response.message || "Failed to create product.");
+        }
+      } else if (modalMode === "edit" && editingProduct) {
+        const response = await updateProduct({
+          id: editingProduct.id,
+          formData,
+        }).unwrap();
+        if (response.success) {
+          closeModal();
+        } else {
+          alert(response.message || "Failed to update product.");
+        }
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert(err?.data?.message || err?.message || "An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Stats Counters
-  const countInStock = products.filter((p) => p.availability === "In Stock").length;
-  const countLimited = products.filter((p) => p.availability === "Limited").length;
-  const countOutOfStock = products.filter((p) => p.availability === "Out of Stock").length;
+  const countInStock = allProductsList.filter((p) => p.availability === "in_stock").length;
+  const countLimited = allProductsList.filter((p) => p.availability === "limited_stock").length;
+  const countOutOfStock = allProductsList.filter((p) => p.availability === "out_of_stock").length;
 
-  // Filtered List
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === "All" || p.category === categoryFilter;
-    const matchesStatus = statusFilter === "All" || p.availability === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+  // Filtered List is mapped to the categories array directly
+  const filteredProducts = categories;
 
   return (
     <div className="p-8">
@@ -426,7 +303,7 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-2xl font-nunito-bold text-slate-800">Products</h1>
           <p className="text-sm font-nunito text-slate-500 mt-1">
-            {products.length} products across 5 categories
+            {totalItems} products across {dbCategories.length} categories
           </p>
         </div>
         <button
@@ -501,11 +378,11 @@ export default function ProductsPage() {
               className="appearance-none pl-4 pr-10 py-2.5 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer font-nunito transition-all shadow-sm"
             >
               <option value="All">All Categories</option>
-              <option value="Beef">Beef</option>
-              <option value="Chicken">Chicken</option>
-              <option value="Lamb">Lamb</option>
-              <option value="Frozen">Frozen</option>
-              <option value="Processed Meats">Processed Meats</option>
+              {dbCategories.map((cat) => (
+                <option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
               <svg
@@ -563,140 +440,260 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider pl-4">
-                  Product
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-6">
-                  Default Price
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
-                  Pack Size
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
-                  Availability
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-8">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredProducts.map((p) => (
-                <tr
-                  key={p.id}
-                  className="hover:bg-slate-50/30 transition-all duration-150"
-                >
-                  {/* Product Info */}
-                  <td className="px-6 py-4 pl-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-50 relative shrink-0 shadow-sm">
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-nunito-bold text-slate-700">
-                            {p.name}
-                          </span>
-                          {p.isNew && (
-                            <span className="bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2] text-[8px] font-bold uppercase rounded-md px-1.5 py-0.5 scale-90">
-                              NEW
-                            </span>
-                          )}
-                          {p.isFeatured && (
-                            <span className="bg-[#FFFBEB] text-[#D97706] border border-[#FEF3C7] text-[8px] font-bold uppercase rounded-md px-1.5 py-0.5 scale-90">
-                              FEATURED
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Category */}
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-nunito-semibold text-slate-500">
-                      {p.category}
-                    </span>
-                  </td>
-
-                  {/* Price */}
-                  <td className="px-6 py-4 text-right pr-6">
-                    <span className="text-sm font-nunito-bold text-[#C4202B]">
-                      ${p.defaultPrice.toFixed(2)}/{p.unit}
-                    </span>
-                  </td>
-
-                  {/* Pack Size */}
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-xs font-nunito text-slate-500">
-                      {p.packSize}
-                    </span>
-                  </td>
-
-                  {/* Availability */}
-                  <td className="px-6 py-4 text-center">
-                    {p.availability === "In Stock" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
-                        In Stock
-                      </span>
-                    )}
-                    {p.availability === "Limited" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
-                        Limited
-                      </span>
-                    )}
-                    {p.availability === "Out of Stock" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
-                        Out of Stock
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4 text-right pr-8">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => router.push(`/dashboard/products/${p.id}`)}
-                        className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                        title="View Details"
-                      >
-                        <EyeIcon size={12} color="currentColor" />
-                      </button>
-                      <button
-                        onClick={() => handleEditClick(p)}
-                        className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                        title="Edit Product"
-                      >
-                        <PenIcon size={12} color="currentColor" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(p.id)}
-                        className="w-8 h-8 rounded-lg border border-red-100 hover:bg-[#FEE2E2]/60 text-[#DC2626] flex items-center justify-center transition-colors cursor-pointer shadow-sm bg-[#FEF2F2]/50"
-                        title="Delete Product"
-                      >
-                        <DeleteIcon size={12} color="currentColor" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {isGetLoading ? (
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+          <p className="text-slate-400 text-xs font-nunito mt-4">Loading products...</p>
         </div>
-      </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
+          <p className="text-slate-400 text-sm font-nunito">No products found.</p>
+        </div>
+      ) : (
+        <>
+          {/* Table Container */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider pl-4">
+                      Product
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-6">
+                      Default Price
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                      Pack Size
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                      Availability
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                      Status
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-8">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredProducts.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="hover:bg-slate-50/30 transition-all duration-150"
+                    >
+                      {/* Product Info */}
+                      <td className="px-6 py-4 pl-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-50 relative shrink-0 shadow-sm">
+                            {p.image ? (
+                              <Image
+                                src={p.image}
+                                alt={p.name}
+                                width={40}
+                                height={40}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <ImageFileIcon size={16} color="currentColor" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-nunito-bold text-slate-700">
+                                {p.name}
+                              </span>
+                              {p.isFeatured && (
+                                <span className="bg-[#FFFBEB] text-[#D97706] border border-[#FEF3C7] text-[8px] font-bold uppercase rounded-md px-1.5 py-0.5 scale-90">
+                                  FEATURED
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Category */}
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-nunito-semibold text-slate-500">
+                          {p.category}
+                        </span>
+                      </td>
+
+                      {/* Price */}
+                      <td className="px-6 py-4 text-right pr-6">
+                        <span className="text-sm font-nunito-bold text-[#C4202B]">
+                          ${p.defaultPrice.toFixed(2)}/{p.unit}
+                        </span>
+                      </td>
+
+                      {/* Pack Size */}
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-xs font-nunito text-slate-500">
+                          {p.packSize}
+                        </span>
+                      </td>
+
+                      {/* Availability */}
+                      <td className="px-6 py-4 text-center">
+                        {p.availability === "In Stock" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
+                            In Stock
+                          </span>
+                        )}
+                        {p.availability === "Limited" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
+                            Limited
+                          </span>
+                        )}
+                        {p.availability === "Out of Stock" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+                            Out of Stock
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Active Status toggle switch */}
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => handleToggleStatus(p.id)}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            p.isActive
+                              ? "bg-brand-primary"
+                              : "bg-slate-200"
+                          }`}
+                          title={p.isActive ? "Deactivate Product" : "Activate Product"}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                              p.isActive ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right pr-8">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => router.push(`/dashboard/products/${p.id}`)}
+                            className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                            title="View Details"
+                          >
+                            <EyeIcon size={12} color="currentColor" />
+                          </button>
+                          <button
+                            onClick={() => handleEditClick(p)}
+                            className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                            title="Edit Product"
+                          >
+                            <PenIcon size={12} color="currentColor" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(p.id)}
+                            className="w-8 h-8 rounded-lg border border-red-100 hover:bg-[#FEE2E2]/60 text-[#DC2626] flex items-center justify-center transition-colors cursor-pointer shadow-sm bg-[#FEF2F2]/50"
+                            title="Delete Product"
+                          >
+                            <DeleteIcon size={12} color="currentColor" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Pagination Footer */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm mt-4">
+              {/* Left: Range and Info */}
+              <div className="text-xs font-nunito-medium text-slate-500">
+                Showing <span className="font-nunito-bold text-slate-700">{Math.min((currentPage - 1) * limit + 1, totalItems)}</span> to{" "}
+                <span className="font-nunito-bold text-slate-700">{Math.min(currentPage * limit, totalItems)}</span> of{" "}
+                <span className="font-nunito-bold text-slate-700">{totalItems}</span> entries
+              </div>
+
+              {/* Right: Controls & Limit Select */}
+              <div className="flex items-center gap-6">
+                {/* Limit Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-nunito-medium text-slate-500">Show:</span>
+                  <div className="relative flex items-center">
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1); // Reset to page 1
+                      }}
+                      className="appearance-none pl-3 pr-8 py-1.5 border border-slate-200 focus:border-brand-primary focus:outline-none rounded-xl text-xs font-nunito-semibold text-slate-700 bg-white shadow-sm cursor-pointer"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <div className="absolute right-2.5 pointer-events-none text-slate-400">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Page Buttons */}
+                <div className="flex items-center gap-1">
+                  {/* Prev Button */}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+                    title="Previous Page"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Page Numbers */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
+                        p === currentPage
+                          ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
+                          : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  {/* Next Button */}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+                    title="Next Page"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Add / Edit Product Modal */}
       {isModalOpen && (
@@ -810,32 +807,46 @@ export default function ProductsPage() {
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Category
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as Product["category"])}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="Beef">Beef</option>
-                    <option value="Chicken">Chicken</option>
-                    <option value="Lamb">Lamb</option>
-                    <option value="Frozen">Frozen</option>
-                    <option value="Processed Meats">Processed Meats</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      {dbCategories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Availability
                   </label>
-                  <select
-                    value={availability}
-                    onChange={(e) => setAvailability(e.target.value as Product["availability"])}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="In Stock">In Stock</option>
-                    <option value="Limited">Limited</option>
-                    <option value="Out of Stock">Out of Stock</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={availability}
+                      onChange={(e) => setAvailability(e.target.value as Product["availability"])}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      <option value="In Stock">In Stock</option>
+                      <option value="Limited">Limited</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -858,17 +869,22 @@ export default function ProductsPage() {
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Unit
                   </label>
-                  <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="kg">kg</option>
-                    <option value="each">each</option>
-                    <option value="pack">pack</option>
-                    <option value="case">case</option>
-                    <option value="portion">portion</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      <option value="piece">piece</option>
+                      <option value="per_kg">per kg</option>
+                      <option value="per_lb">per lb</option>
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -905,15 +921,17 @@ export default function ProductsPage() {
             <div className="p-6 pt-4 border-t border-slate-50 bg-slate-50/30 flex justify-end gap-3">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white"
+                disabled={isSaving}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98] disabled:opacity-50"
               >
-                {modalMode === "add" ? "Add Product" : "Update Product"}
+                {isSaving ? "Saving..." : modalMode === "add" ? "Add Product" : "Update Product"}
               </button>
             </div>
           </div>
@@ -956,7 +974,7 @@ export default function ProductsPage() {
               <p className="text-sm font-nunito text-slate-600">
                 Are you sure you want to delete the product{" "}
                 <span className="font-nunito-bold text-slate-800">
-                  {products.find((p) => p.id === deletingProductId)?.name}
+                  {filteredProducts.find((p) => p.id === deletingProductId)?.name}
                 </span>
                 ? This action cannot be undone.
               </p>
@@ -966,15 +984,17 @@ export default function ProductsPage() {
             <div className="p-6 pt-4 border-t border-slate-50 bg-slate-50/30 flex justify-end gap-3">
               <button
                 onClick={cancelDelete}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white"
+                disabled={isSaving}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50"
               >
-                Delete Product
+                {isSaving ? "Deleting..." : "Delete Product"}
               </button>
             </div>
           </div>

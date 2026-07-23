@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  useGetSingleProductQuery,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+} from "@/store/api/productApi";
+import { useGetAllCategoriesQuery } from "@/store/api/categoryApi";
 import {
   BackIcon,
   PenIcon,
@@ -13,7 +19,8 @@ import {
 interface Product {
   id: string;
   name: string;
-  category: "Beef" | "Chicken" | "Lamb" | "Frozen" | "Processed Meats";
+  category: string;
+  categoryId?: string;
   defaultPrice: number;
   unit: string;
   packSize: string;
@@ -22,6 +29,7 @@ interface Product {
   image: string;
   isFeatured?: boolean;
   isNew?: boolean;
+  isActive?: boolean;
 }
 
 interface PageProps {
@@ -32,8 +40,34 @@ export default function ProductDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Queries
+  const { data: apiData, isLoading: isGetLoading } = useGetSingleProductQuery(id);
+  const { data: categoriesData } = useGetAllCategoriesQuery();
+  const dbCategories = categoriesData?.data?.result || [];
+
+  const [updateProduct] = useUpdateProductMutation();
+  const [deleteProduct] = useDeleteProductMutation();
+
+  const product = useMemo(() => {
+    if (!apiData?.data) return null;
+    const p = apiData.data;
+    return {
+      id: p._id,
+      name: p.name,
+      category: p.category?.name || "Uncategorized",
+      categoryId: p.category?._id || "",
+      defaultPrice: p.price,
+      unit: p.unit,
+      packSize: p.packSize,
+      availability: p.availability === "in_stock" ? "In Stock" : p.availability === "limited_stock" ? "Limited" : "Out of Stock" as Product["availability"],
+      description: p.description,
+      image: p.image,
+      isFeatured: p.isFeatured,
+      isActive: p.isActive,
+    };
+  }, [apiData]);
 
   // Modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -41,32 +75,20 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   // Form States
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<Product["category"]>("Beef");
+  const [category, setCategory] = useState("");
   const [availability, setAvailability] = useState<Product["availability"]>("In Stock");
   const [defaultPrice, setDefaultPrice] = useState("");
-  const [unit, setUnit] = useState("kg");
+  const [unit, setUnit] = useState("per_kg");
   const [packSize, setPackSize] = useState("");
   const [description, setDescription] = useState("");
   const [productImage, setProductImage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  // Load from LocalStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("ozenet_products");
-    if (saved) {
-      const list: Product[] = JSON.parse(saved);
-      setProductsList(list);
-      const found = list.find((p) => p.id === id);
-      if (found) {
-        setProduct(found);
-      }
-    }
-  }, [id]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleEditClick = () => {
     if (!product) return;
     setName(product.name);
-    setCategory(product.category);
+    setCategory(product.categoryId || "");
     setAvailability(product.availability);
     setDefaultPrice(String(product.defaultPrice));
     setUnit(product.unit);
@@ -74,12 +96,14 @@ export default function ProductDetailPage({ params }: PageProps) {
     setDescription(product.description);
     setProductImage(product.image);
     setPreviewUrl(null);
+    setSelectedFile(null);
     setIsEditModalOpen(true);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
@@ -93,12 +117,13 @@ export default function ProductDetailPage({ params }: PageProps) {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!name.trim() || !defaultPrice || !product) {
       alert("Name and Price are required.");
       return;
@@ -110,40 +135,76 @@ export default function ProductDetailPage({ params }: PageProps) {
       return;
     }
 
-    const finalImage = previewUrl || productImage || product.image;
+    setIsSaving(true);
+    try {
+      const formData = new FormData();
+      if (selectedFile) {
+        formData.append("product_image", selectedFile);
+      }
+      formData.append(
+        "data",
+        JSON.stringify({
+          name,
+          category,
+          availability: availability === "In Stock" ? "in_stock" : availability === "Limited" ? "limited_stock" : "out_of_stock",
+          price: priceNum,
+          description: description || "Fresh meat product",
+          unit,
+          packSize: packSize || "1 kg",
+          isFeatured: product.isFeatured ?? true,
+          isActive: product.isActive ?? true,
+        })
+      );
 
-    const updatedProduct: Product = {
-      ...product,
-      name,
-      category,
-      defaultPrice: priceNum,
-      unit,
-      packSize,
-      availability,
-      description,
-      image: finalImage,
-    };
+      const response = await updateProduct({
+        id: product.id,
+        formData,
+      }).unwrap();
 
-    const updatedList = productsList.map((p) =>
-      p.id === product.id ? updatedProduct : p
-    );
-    localStorage.setItem("ozenet_products", JSON.stringify(updatedList));
-    setProductsList(updatedList);
-    setProduct(updatedProduct);
-    setIsEditModalOpen(false);
+      if (response.success) {
+        setIsEditModalOpen(false);
+      } else {
+        alert(response.message || "Failed to update product.");
+      }
+    } catch (err: any) {
+      console.error("Update error:", err);
+      alert(err?.data?.message || err?.message || "An error occurred while updating.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDeleteClick = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!product) return;
-    const updatedList = productsList.filter((p) => p.id !== product.id);
-    localStorage.setItem("ozenet_products", JSON.stringify(updatedList));
-    setIsDeleteModalOpen(false);
-    router.push("/dashboard/products");
+    setIsSaving(true);
+    try {
+      const response = await deleteProduct(product.id).unwrap();
+      if (response.success) {
+        setIsDeleteModalOpen(false);
+        router.push("/dashboard/products");
+      } else {
+        alert(response.message || "Failed to delete product.");
+      }
+    } catch (err: any) {
+      console.error("Delete error:", err);
+      alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isGetLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32">
+        <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+        <p className="text-slate-400 text-xs font-nunito mt-4">Loading product details...</p>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -399,32 +460,46 @@ export default function ProductDetailPage({ params }: PageProps) {
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Category
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as Product["category"])}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="Beef">Beef</option>
-                    <option value="Chicken">Chicken</option>
-                    <option value="Lamb">Lamb</option>
-                    <option value="Frozen">Frozen</option>
-                    <option value="Processed Meats">Processed Meats</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      {dbCategories.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Availability
                   </label>
-                  <select
-                    value={availability}
-                    onChange={(e) => setAvailability(e.target.value as Product["availability"])}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="In Stock">In Stock</option>
-                    <option value="Limited">Limited</option>
-                    <option value="Out of Stock">Out of Stock</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={availability}
+                      onChange={(e) => setAvailability(e.target.value as Product["availability"])}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      <option value="In Stock">In Stock</option>
+                      <option value="Limited">Limited</option>
+                      <option value="Out of Stock">Out of Stock</option>
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -447,17 +522,22 @@ export default function ProductDetailPage({ params }: PageProps) {
                   <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
                     Unit
                   </label>
-                  <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
-                  >
-                    <option value="kg">kg</option>
-                    <option value="each">each</option>
-                    <option value="pack">pack</option>
-                    <option value="case">case</option>
-                    <option value="portion">portion</option>
-                  </select>
+                  <div className="relative flex items-center">
+                    <select
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
+                    >
+                      <option value="piece">piece</option>
+                      <option value="per_kg">per kg</option>
+                      <option value="per_lb">per lb</option>
+                    </select>
+                    <div className="absolute right-4 pointer-events-none text-slate-400">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -494,15 +574,17 @@ export default function ProductDetailPage({ params }: PageProps) {
             <div className="p-6 pt-4 border-t border-slate-50 bg-slate-50/30 flex justify-end gap-3">
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white"
+                disabled={isSaving}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdate}
-                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98] disabled:opacity-50"
               >
-                Update Product
+                {isSaving ? "Saving..." : "Update Product"}
               </button>
             </div>
           </div>
@@ -553,15 +635,17 @@ export default function ProductDetailPage({ params }: PageProps) {
             <div className="p-6 pt-4 border-t border-slate-50 bg-slate-50/30 flex justify-end gap-3">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white"
+                disabled={isSaving}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] bg-white disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50"
               >
-                Delete Product
+                {isSaving ? "Deleting..." : "Delete Product"}
               </button>
             </div>
           </div>
