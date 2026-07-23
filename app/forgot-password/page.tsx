@@ -3,6 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
+  useForgotPasswordMutation,
+  useResendResetCodeMutation,
+  useVerifyResetOtpMutation,
+  useResetPasswordMutation,
+} from "@/store/api/authApi";
+import {
   MailIcon,
   BackIcon,
   LockIcon,
@@ -30,6 +36,11 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState("");
   const [timer, setTimer] = useState(60);
 
+  const [forgotPassword] = useForgotPasswordMutation();
+  const [resendResetCode] = useResendResetCodeMutation();
+  const [verifyResetOtp] = useVerifyResetOtpMutation();
+  const [resetPassword] = useResetPasswordMutation();
+
   const canResend = timer === 0;
 
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -50,7 +61,7 @@ export default function ForgotPasswordPage() {
   }, [step, timer]);
 
   // Request code submit handler
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -61,16 +72,21 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
 
-    // Mock network delay
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email.toLowerCase() === "admin@ozen-et.com") {
+    try {
+      const response = await forgotPassword({ email }).unwrap();
+      if (response.success) {
         setStep("VERIFY_CODE");
         setTimer(60);
       } else {
-        setError("This email address is not registered in our admin system.");
+        setError(response.message || "Failed to send reset code.");
       }
-    }, 1200);
+    } catch (err: any) {
+      console.error("Forgot password error:", err);
+      const errMsg = err?.data?.message || err?.message || "Failed to send reset code.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Verify Code input focus handling
@@ -108,35 +124,61 @@ export default function ForgotPasswordPage() {
   };
 
   // Verify code submit handler
-  const handleVerifySubmit = (e: React.FormEvent) => {
+  const handleVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     const enteredCode = code.join("");
+    const resetCodeNum = Number(enteredCode);
 
-    setTimeout(() => {
+    if (isNaN(resetCodeNum) || enteredCode.length !== 6) {
+      setError("Please enter a valid 6-digit code.");
       setIsLoading(false);
-      // Let's use 123456 as the validation OTP code
-      if (enteredCode === "123456") {
+      return;
+    }
+
+    try {
+      const response = await verifyResetOtp({ email, resetCode: resetCodeNum }).unwrap();
+      if (response.success) {
         setStep("NEW_PASSWORD");
       } else {
-        setError("Invalid verification code. Please enter 123456 to test.");
+        setError(response.message || "Invalid verification code.");
       }
-    }, 1200);
+    } catch (err: any) {
+      console.error("Verify OTP error:", err);
+      const errMsg = err?.data?.message || err?.message || "Invalid verification code.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
     if (!canResend) return;
     setError("");
-    setTimer(60);
     setCode(Array(6).fill(""));
     otpInputRefs.current[0]?.focus();
-    // In a real app we'd trigger api to resend email
+
+    setIsLoading(true);
+    try {
+      const response = await resendResetCode({ email }).unwrap();
+      if (response.success) {
+        setTimer(60);
+      } else {
+        setError(response.message || "Failed to resend code.");
+      }
+    } catch (err: any) {
+      console.error("Resend code error:", err);
+      const errMsg = err?.data?.message || err?.message || "Failed to resend code.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Save new password submit handler
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -151,10 +193,25 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const response = await resetPassword({
+        email,
+        password: newPassword,
+        confirmPassword,
+      }).unwrap();
+
+      if (response.success) {
+        setStep("SUCCESS_STATUS");
+      } else {
+        setError(response.message || "Failed to reset password.");
+      }
+    } catch (err: any) {
+      console.error("Reset password error:", err);
+      const errMsg = err?.data?.message || err?.message || "Failed to reset password.";
+      setError(errMsg);
+    } finally {
       setIsLoading(false);
-      setStep("SUCCESS_STATUS");
-    }, 1200);
+    }
   };
 
   // Format countdown text helper
@@ -165,6 +222,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
+
     <main className="min-h-screen flex flex-col justify-center items-center bg-[#F8FAFC] px-6 py-12">
       {/* Back button (Only visible in Step 1 and 2) */}
       {(step === "REQUEST_EMAIL" || step === "VERIFY_CODE") && (

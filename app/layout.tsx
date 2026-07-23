@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { StoreProvider } from "@/store/provider";
 
 export const metadata: Metadata = {
   title: "Özen Et - Admin Dashboard Login",
@@ -14,8 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-nunito bg-slate-50 text-text-dark">
-        {children}
+        <StoreProvider>{children}</StoreProvider>
       </body>
     </html>
   );
 }
+

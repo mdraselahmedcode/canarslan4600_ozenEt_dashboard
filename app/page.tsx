@@ -4,6 +4,9 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useDispatch } from "react-redux";
+import { useLoginMutation } from "@/store/api/authApi";
+import { setCredentials } from "@/store/slices/authSlice";
 import { CheckInCircleIcon, MailIcon, LockIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
 
 export default function LoginPage() {
@@ -15,7 +18,10 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [login] = useLoginMutation();
+  const dispatch = useDispatch();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -30,19 +36,38 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // Mock login delay
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email === "admin@ozen-et.com" && password === "admin123") {
+    try {
+      const response = await login({
+        email,
+        password,
+        playerId: "",
+        platform: "web",
+      }).unwrap();
+
+      if (response.success && response.data) {
+        dispatch(
+          setCredentials({
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken,
+            role: response.data.role,
+          })
+        );
         setIsSuccess(true);
         setTimeout(() => {
           router.push("/dashboard");
         }, 1200);
       } else {
-        setError("Invalid email address or password.");
+        setError(response.message || "Invalid email address or password.");
       }
-    }, 1500);
+    } catch (err: any) {
+      console.error("Login error:", err);
+      const errMsg = err?.data?.message || err?.message || "Invalid email address or password.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   return (
     <main className="min-h-screen flex flex-col md:flex-row bg-[#F8FAFC]">
