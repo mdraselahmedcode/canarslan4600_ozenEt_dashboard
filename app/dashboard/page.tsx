@@ -13,6 +13,7 @@ import {
   DoubleCheckIcon,
   DollarIcon,
 } from "@/components/icons";
+import { useRouter } from "next/navigation";
 
 /* ------------------------------------------------------------------ */
 /*  Mock Data                                                          */
@@ -79,26 +80,31 @@ const recentOrders = [
 
 const pendingApprovals = [
   {
+    id: "6",
     name: "City Catering Service",
     type: "Catering Company",
     date: "Jul 8, 2026",
   },
   {
+    id: "7",
     name: "Harbor View Restauran",
     type: "Restaurant",
     date: "Jul 10, 2026",
   },
   {
+    id: "8",
     name: "Uptown Steakhouse LL",
     type: "Restaurant",
     date: "Jul 11, 2026",
   },
   {
+    id: "9",
     name: "Jersey Fresh Marke",
     type: "Supermarket / Grocery",
     date: "Jul 12, 2026",
   },
   {
+    id: "10",
     name: "Queens Food Hub",
     type: "Distributor / Wholesaler",
     date: "Jul 13, 2026",
@@ -134,6 +140,7 @@ function StatusBadge({ status }: { status: string }) {
 /* ------------------------------------------------------------------ */
 
 export default function DashboardPage() {
+  const router = useRouter();
   const today = new Date();
   const formattedDate = today.toLocaleDateString("en-US", {
     month: "short",
@@ -365,7 +372,12 @@ export default function DashboardPage() {
                 <p className="text-[11px] font-nunito text-slate-400 mb-2.5">
                   {customer.date}
                 </p>
-                <button className="text-xs font-nunito-bold text-slate-600 hover:text-slate-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg transition-all duration-200 cursor-pointer">
+                <button
+                  onClick={() =>
+                    router.push(`/dashboard/customers/${customer.id}`)
+                  }
+                  className="text-xs font-nunito-bold text-slate-600 hover:text-slate-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+                >
                   View
                 </button>
               </div>
