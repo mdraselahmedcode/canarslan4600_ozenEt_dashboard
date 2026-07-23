@@ -20,7 +20,7 @@ export function StatCard({
   return (
     <div
       className={`
-        bg-white rounded-2xl border p-5 relative shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer
+        bg-white rounded-2xl border p-5 relative shadow-sm hover:shadow-md transition-shadow duration-200
         ${attention ? "border-[#FECACA]" : "border-[#E2E8F0]"}
       `}
     >
