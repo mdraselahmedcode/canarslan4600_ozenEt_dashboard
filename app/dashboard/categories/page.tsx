@@ -41,12 +41,31 @@ const getCategoryBadgeClass = (categoryName: string) => {
 };
 
 export default function CategoriesPage() {
-  const { data: apiData, isLoading: isGetLoading } = useGetAllCategoriesQuery();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search term to avoid hitting the API too many times
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1); // Reset to page 1 on new search
+    }, 400);
+
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const { data: apiData, isLoading: isGetLoading } = useGetAllCategoriesQuery({
+    page,
+    limit,
+    searchTerm: debouncedSearch,
+  });
+
   const [createCategory] = useCreateCategoryMutation();
   const [updateCategory] = useUpdateCategoryMutation();
   const [deleteCategory] = useDeleteCategoryMutation();
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   // Modal States
@@ -68,6 +87,11 @@ export default function CategoriesPage() {
       productsCount: cat.totalProduct ?? 0,
     }));
   }, [apiData]);
+
+  const meta = apiData?.data?.meta;
+  const totalItems = meta?.total || 0;
+  const totalPages = meta?.totalPage || 1;
+  const currentPage = meta?.page || 1;
 
   const handleAddClick = () => {
     setModalMode("add");
@@ -194,10 +218,8 @@ export default function CategoriesPage() {
     }
   };
 
-  // Filter list
-  const filteredCategories = categories.filter((cat) =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // List filter (now server-side search is hooked up, so we just return the categories direct list)
+  const filteredCategories = categories;
 
   return (
 
@@ -207,7 +229,7 @@ export default function CategoriesPage() {
         <div>
           <h1 className="text-2xl font-nunito-bold text-slate-800">Categories</h1>
           <p className="text-sm font-nunito text-slate-500 mt-1">
-            {categories.length} product categories
+            {totalItems} product categories
           </p>
         </div>
         <button
@@ -367,6 +389,88 @@ export default function CategoriesPage() {
               </table>
             </div>
           </div>
+
+          {/* Pagination Footer */}
+          {totalItems > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm mt-4">
+              {/* Left: Range and Info */}
+              <div className="text-xs font-nunito-medium text-slate-500">
+                Showing <span className="font-nunito-bold text-slate-700">{Math.min((currentPage - 1) * limit + 1, totalItems)}</span> to{" "}
+                <span className="font-nunito-bold text-slate-700">{Math.min(currentPage * limit, totalItems)}</span> of{" "}
+                <span className="font-nunito-bold text-slate-700">{totalItems}</span> entries
+              </div>
+
+              {/* Right: Controls & Limit Select */}
+              <div className="flex items-center gap-6">
+                {/* Limit Selector */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-nunito-medium text-slate-500">Show:</span>
+                  <div className="relative flex items-center">
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        setLimit(Number(e.target.value));
+                        setPage(1); // Reset to page 1
+                      }}
+                      className="appearance-none pl-3 pr-8 py-1.5 border border-slate-200 focus:border-brand-primary focus:outline-none rounded-xl text-xs font-nunito-semibold text-slate-700 bg-white shadow-sm cursor-pointer"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <div className="absolute right-2.5 pointer-events-none text-slate-400">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Page Buttons */}
+                <div className="flex items-center gap-1">
+                  {/* Prev Button */}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+                    title="Previous Page"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Page Numbers */}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
+                        p === currentPage
+                          ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
+                          : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+
+                  {/* Next Button */}
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
+                    title="Next Page"
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
