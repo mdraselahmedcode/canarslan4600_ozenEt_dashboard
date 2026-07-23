@@ -1,7 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
+import {
+  useGetAllCategoriesQuery,
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+} from "@/store/api/categoryApi";
 import {
   CategoriesIcon,
   PenIcon,
@@ -15,14 +21,6 @@ interface Category {
   image: string;
   productsCount: number;
 }
-
-const initialCategories: Category[] = [
-  { id: "1", name: "Beef", image: "/images/cat_beef.jpg", productsCount: 5 },
-  { id: "2", name: "Chicken", image: "/images/cat_chick.jpg", productsCount: 4 },
-  { id: "3", name: "Lamb", image: "/images/cat_lamb.jpg", productsCount: 3 },
-  { id: "4", name: "Frozen", image: "/images/cat_frozen.jpg", productsCount: 3 },
-  { id: "5", name: "Processed Meats", image: "/images/cat_processed_meats.jpg", productsCount: 3 },
-];
 
 const getCategoryBadgeClass = (categoryName: string) => {
   switch (categoryName) {
@@ -43,8 +41,13 @@ const getCategoryBadgeClass = (categoryName: string) => {
 };
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>(initialCategories);
+  const { data: apiData, isLoading: isGetLoading } = useGetAllCategoriesQuery();
+  const [createCategory] = useCreateCategoryMutation();
+  const [updateCategory] = useUpdateCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
+
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,6 +58,16 @@ export default function CategoriesPage() {
   const [categoryName, setCategoryName] = useState("");
   const [categoryImage, setCategoryImage] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const categories: Category[] = useMemo(() => {
+    return (apiData?.data?.result || []).map((cat) => ({
+      id: cat._id,
+      name: cat.name,
+      image: cat.image,
+      productsCount: cat.totalProduct ?? 0,
+    }));
+  }, [apiData]);
 
   const handleAddClick = () => {
     setModalMode("add");
@@ -62,6 +75,7 @@ export default function CategoriesPage() {
     setCategoryName("");
     setCategoryImage(null);
     setPreviewUrl(null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -71,6 +85,7 @@ export default function CategoriesPage() {
     setCategoryName(cat.name);
     setCategoryImage(cat.image);
     setPreviewUrl(null);
+    setSelectedFile(null);
     setIsModalOpen(true);
   };
 
@@ -83,12 +98,23 @@ export default function CategoriesPage() {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingCategoryId) {
-      setCategories((prev) => prev.filter((c) => c.id !== deletingCategoryId));
+      setIsSaving(true);
+      try {
+        const response = await deleteCategory(deletingCategoryId).unwrap();
+        if (!response.success) {
+          alert(response.message || "Failed to delete category.");
+        }
+      } catch (err: any) {
+        console.error("Delete error:", err);
+        alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+      } finally {
+        setIsSaving(false);
+        setIsDeleteModalOpen(false);
+        setDeletingCategoryId(null);
+      }
     }
-    setIsDeleteModalOpen(false);
-    setDeletingCategoryId(null);
   };
 
   const cancelDelete = () => {
@@ -102,11 +128,13 @@ export default function CategoriesPage() {
     setCategoryName("");
     setCategoryImage(null);
     setPreviewUrl(null);
+    setSelectedFile(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
@@ -120,38 +148,50 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
+      setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!categoryName.trim()) {
       alert("Category name is required.");
       return;
     }
 
-    const finalImage = previewUrl || categoryImage || "/images/cat_beef.jpg";
+    setIsSaving(true);
+    try {
+      const formData = new FormData();
+      if (selectedFile) {
+        formData.append("category_image", selectedFile);
+      }
+      formData.append("data", JSON.stringify({ name: categoryName }));
 
-    if (modalMode === "add") {
-      const newCat: Category = {
-        id: String(Date.now()),
-        name: categoryName,
-        image: finalImage,
-        productsCount: 0,
-      };
-      setCategories((prev) => [...prev, newCat]);
-    } else if (modalMode === "edit" && editingCategory) {
-      setCategories((prev) =>
-        prev.map((c) =>
-          c.id === editingCategory.id
-            ? { ...c, name: categoryName, image: finalImage }
-            : c
-        )
-      );
+      if (modalMode === "add") {
+        const response = await createCategory(formData).unwrap();
+        if (response.success) {
+          closeModal();
+        } else {
+          alert(response.message || "Failed to create category.");
+        }
+      } else if (modalMode === "edit" && editingCategory) {
+        const response = await updateCategory({
+          id: editingCategory.id,
+          formData,
+        }).unwrap();
+        if (response.success) {
+          closeModal();
+        } else {
+          alert(response.message || "Failed to update category.");
+        }
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert(err?.data?.message || err?.message || "An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
     }
-
-    closeModal();
   };
 
   // Filter list
@@ -160,6 +200,7 @@ export default function CategoriesPage() {
   );
 
   return (
+
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -177,136 +218,157 @@ export default function CategoriesPage() {
         </button>
       </div>
 
-      {/* Category Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-5 mb-8">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col items-center justify-center text-center hover:scale-[1.01] transition-transform duration-200"
-          >
-            <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 relative bg-slate-50 flex items-center justify-center shadow-inner">
-              <Image
-                src={cat.image}
-                alt={cat.name}
-                width={64}
-                height={64}
-                className="object-cover w-full h-full"
+      {isGetLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-3xl shadow-sm">
+          <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-sm font-nunito text-slate-500">Loading categories...</p>
+        </div>
+      ) : (
+        <>
+          {/* Category Overview Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-5 mb-8">
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col items-center justify-center text-center hover:scale-[1.01] transition-transform duration-200"
+              >
+                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 relative bg-slate-50 flex items-center justify-center shadow-inner">
+                  {cat.image ? (
+                    <Image
+                      src={cat.image}
+                      alt={cat.name}
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                      <ImageFileIcon size={24} color="currentColor" />
+                    </div>
+                  )}
+                </div>
+                <h3 className="text-sm font-nunito-bold text-slate-800 leading-tight">
+                  {cat.name}
+                </h3>
+                <p className="text-[11px] font-nunito-medium text-slate-400 mt-1">
+                  {cat.productsCount} products
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Search Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="relative w-full sm:w-80">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </span>
+              <input
+                type="text"
+                placeholder="Search categories..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-700 bg-white transition-all shadow-sm"
               />
             </div>
-            <h3 className="text-sm font-nunito-bold text-slate-800 leading-tight">
-              {cat.name}
-            </h3>
-            <p className="text-[11px] font-nunito-medium text-slate-400 mt-1">
-              {cat.productsCount} products
-            </p>
+            <div className="text-xs font-nunito text-slate-400">
+              {filteredCategories.length} categories
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Search Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div className="relative w-full sm:w-80">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </span>
-          <input
-            type="text"
-            placeholder="Search categories..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-700 bg-white transition-all shadow-sm"
-          />
-        </div>
-        <div className="text-xs font-nunito text-slate-400">
-          {filteredCategories.length} categories
-        </div>
-      </div>
+          {/* Table Container */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
+                      Category
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                      Products
+                    </th>
+                    <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-10">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {filteredCategories.map((cat) => (
+                    <tr
+                      key={cat.id}
+                      className="hover:bg-slate-50/30 transition-all duration-150"
+                    >
+                      {/* Category Info */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-50 relative shrink-0 shadow-sm">
+                            {cat.image ? (
+                              <Image
+                                src={cat.image}
+                                alt={cat.name}
+                                width={40}
+                                height={40}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                <ImageFileIcon size={16} color="currentColor" />
+                              </div>
+                            )}
+                          </div>
+                          <span className="text-sm font-nunito-bold text-slate-700">
+                            {cat.name}
+                          </span>
+                        </div>
+                      </td>
 
-      {/* Table Container */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[500px]">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
-                  Products
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-10">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredCategories.map((cat) => (
-                <tr
-                  key={cat.id}
-                  className="hover:bg-slate-50/30 transition-all duration-150"
-                >
-                  {/* Category Info */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-50 relative shrink-0 shadow-sm">
-                        <Image
-                          src={cat.image}
-                          alt={cat.name}
-                          width={40}
-                          height={40}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                      <span className="text-sm font-nunito-bold text-slate-700">
-                        {cat.name}
-                      </span>
-                    </div>
-                  </td>
+                      {/* Products Count */}
+                      <td className="px-6 py-4 text-center">
+                        <span className="text-sm font-nunito-bold text-slate-700">
+                          {cat.productsCount}
+                        </span>
+                      </td>
 
-                  {/* Products Count */}
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-sm font-nunito-bold text-slate-700">
-                      {cat.productsCount}
-                    </span>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-6 py-4 text-right pr-10">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditClick(cat)}
-                        className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
-                        title="Edit Category"
-                      >
-                        <PenIcon size={12} color="currentColor" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(cat.id)}
-                        className="w-8 h-8 rounded-lg border border-red-100 hover:bg-[#FEE2E2]/60 text-[#DC2626] flex items-center justify-center transition-colors cursor-pointer shadow-sm bg-[#FEF2F2]/50"
-                        title="Delete Category"
-                      >
-                        <DeleteIcon size={12} color="currentColor" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      {/* Actions */}
+                      <td className="px-6 py-4 text-right pr-10">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEditClick(cat)}
+                            className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
+                            title="Edit Category"
+                          >
+                            <PenIcon size={12} color="currentColor" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(cat.id)}
+                            className="w-8 h-8 rounded-lg border border-red-100 hover:bg-[#FEE2E2]/60 text-[#DC2626] flex items-center justify-center transition-colors cursor-pointer shadow-sm bg-[#FEF2F2]/50"
+                            title="Delete Category"
+                          >
+                            <DeleteIcon size={12} color="currentColor" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modal Dialog */}
       {isModalOpen && (
@@ -426,9 +488,11 @@ export default function CategoriesPage() {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {modalMode === "add" ? "Save Category" : "Update Category"}
+                {isSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                <span>{modalMode === "add" ? "Save Category" : "Update Category"}</span>
               </button>
             </div>
           </div>
@@ -487,9 +551,11 @@ export default function CategoriesPage() {
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98]"
+                disabled={isSaving}
+                className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                Delete Category
+                {isSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                <span>Delete Category</span>
               </button>
             </div>
           </div>
