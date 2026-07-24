@@ -43,7 +43,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   // Queries
-  const { data: apiData, isLoading: isGetLoading } = useGetSingleProductQuery(id);
+  const { data: apiData, isLoading: isGetLoading } =
+    useGetSingleProductQuery(id);
   const { data: categoriesData } = useGetAllCategoriesQuery();
   const dbCategories = categoriesData?.data?.result || [];
 
@@ -61,7 +62,12 @@ export default function ProductDetailPage({ params }: PageProps) {
       defaultPrice: p.price,
       unit: p.unit,
       packSize: p.packSize,
-      availability: p.availability === "in_stock" ? "In Stock" : p.availability === "limited_stock" ? "Limited" : "Out of Stock" as Product["availability"],
+      availability:
+        p.availability === "in_stock"
+          ? "In Stock"
+          : p.availability === "limited_stock"
+            ? "Limited"
+            : ("Out of Stock" as Product["availability"]),
       description: p.description,
       image: p.image,
       isFeatured: p.isFeatured,
@@ -76,7 +82,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   // Form States
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [availability, setAvailability] = useState<Product["availability"]>("In Stock");
+  const [availability, setAvailability] =
+    useState<Product["availability"]>("In Stock");
   const [defaultPrice, setDefaultPrice] = useState("");
   const [unit, setUnit] = useState("per_kg");
   const [packSize, setPackSize] = useState("");
@@ -146,14 +153,19 @@ export default function ProductDetailPage({ params }: PageProps) {
         JSON.stringify({
           name,
           category,
-          availability: availability === "In Stock" ? "in_stock" : availability === "Limited" ? "limited_stock" : "out_of_stock",
+          availability:
+            availability === "In Stock"
+              ? "in_stock"
+              : availability === "Limited"
+                ? "limited_stock"
+                : "out_of_stock",
           price: priceNum,
           description: description || "Fresh meat product",
           unit,
           packSize: packSize || "1 kg",
           isFeatured: product.isFeatured ?? true,
           isActive: product.isActive ?? true,
-        })
+        }),
       );
 
       const response = await updateProduct({
@@ -168,7 +180,11 @@ export default function ProductDetailPage({ params }: PageProps) {
       }
     } catch (err: any) {
       console.error("Update error:", err);
-      alert(err?.data?.message || err?.message || "An error occurred while updating.");
+      alert(
+        err?.data?.message ||
+          err?.message ||
+          "An error occurred while updating.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -191,7 +207,11 @@ export default function ProductDetailPage({ params }: PageProps) {
       }
     } catch (err: any) {
       console.error("Delete error:", err);
-      alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+      alert(
+        err?.data?.message ||
+          err?.message ||
+          "An error occurred while deleting.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -201,7 +221,9 @@ export default function ProductDetailPage({ params }: PageProps) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
         <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
-        <p className="text-slate-400 text-xs font-nunito mt-4">Loading product details...</p>
+        <p className="text-slate-400 text-xs font-nunito mt-4">
+          Loading product details...
+        </p>
       </div>
     );
   }
@@ -312,26 +334,42 @@ export default function ProductDetailPage({ params }: PageProps) {
             </h2>
             <div className="divide-y divide-slate-50 text-sm">
               <div className="flex justify-between py-3">
-                <span className="font-nunito-medium text-slate-400">Category</span>
-                <span className="font-nunito-bold text-slate-700">{product.category}</span>
+                <span className="font-nunito-medium text-slate-400">
+                  Category
+                </span>
+                <span className="font-nunito-bold text-slate-700">
+                  {product.category}
+                </span>
               </div>
               <div className="flex justify-between py-3">
                 <span className="font-nunito-medium text-slate-400">Unit</span>
-                <span className="font-nunito-bold text-slate-700">{product.unit}</span>
+                <span className="font-nunito-bold text-slate-700">
+                  {product.unit}
+                </span>
               </div>
               <div className="flex justify-between py-3">
-                <span className="font-nunito-medium text-slate-400">Pack Size</span>
-                <span className="font-nunito-bold text-slate-700">{product.packSize}</span>
+                <span className="font-nunito-medium text-slate-400">
+                  Pack Size
+                </span>
+                <span className="font-nunito-bold text-slate-700">
+                  {product.packSize}
+                </span>
               </div>
               <div className="flex justify-between py-3">
-                <span className="font-nunito-medium text-slate-400">Default Price</span>
+                <span className="font-nunito-medium text-slate-400">
+                  Default Price
+                </span>
                 <span className="font-nunito-bold text-slate-700">
                   ${product.defaultPrice.toFixed(2)} per {product.unit}
                 </span>
               </div>
               <div className="flex justify-between py-3">
-                <span className="font-nunito-medium text-slate-400">Availability</span>
-                <span className="font-nunito-bold text-slate-700">{product.availability}</span>
+                <span className="font-nunito-medium text-slate-400">
+                  Availability
+                </span>
+                <span className="font-nunito-bold text-slate-700">
+                  {product.availability}
+                </span>
               </div>
             </div>
           </div>
@@ -396,7 +434,11 @@ export default function ProductDetailPage({ params }: PageProps) {
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-3">
                       <button
                         type="button"
-                        onClick={() => document.getElementById("product-detail-file-input")?.click()}
+                        onClick={() =>
+                          document
+                            .getElementById("product-detail-file-input")
+                            ?.click()
+                        }
                         className="px-3.5 py-2 bg-white text-slate-700 rounded-xl text-xs font-nunito-semibold shadow hover:bg-slate-50 cursor-pointer"
                       >
                         Change
@@ -417,7 +459,11 @@ export default function ProductDetailPage({ params }: PageProps) {
                   <div
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    onClick={() => document.getElementById("product-detail-file-input")?.click()}
+                    onClick={() =>
+                      document
+                        .getElementById("product-detail-file-input")
+                        ?.click()
+                    }
                     className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-2xl bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400 group-hover:text-slate-500 transition-colors shadow-sm bg-white">
@@ -473,8 +519,18 @@ export default function ProductDetailPage({ params }: PageProps) {
                       ))}
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -487,7 +543,11 @@ export default function ProductDetailPage({ params }: PageProps) {
                   <div className="relative flex items-center">
                     <select
                       value={availability}
-                      onChange={(e) => setAvailability(e.target.value as Product["availability"])}
+                      onChange={(e) =>
+                        setAvailability(
+                          e.target.value as Product["availability"],
+                        )
+                      }
                       className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
                     >
                       <option value="In Stock">In Stock</option>
@@ -495,8 +555,18 @@ export default function ProductDetailPage({ params }: PageProps) {
                       <option value="Out of Stock">Out of Stock</option>
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -533,8 +603,18 @@ export default function ProductDetailPage({ params }: PageProps) {
                       <option value="per_lb">per lb</option>
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -626,8 +706,10 @@ export default function ProductDetailPage({ params }: PageProps) {
             <div className="p-6">
               <p className="text-sm font-nunito text-slate-600">
                 Are you sure you want to delete the product{" "}
-                <span className="font-nunito-bold text-slate-800">{product.name}</span>?
-                This action cannot be undone.
+                <span className="font-nunito-bold text-slate-800">
+                  {product.name}
+                </span>
+                ? This action cannot be undone.
               </p>
             </div>
 

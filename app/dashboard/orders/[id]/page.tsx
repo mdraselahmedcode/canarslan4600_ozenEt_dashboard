@@ -4,7 +4,10 @@ import React, { useState, use } from "react";
 import Link from "next/link";
 import { BackIcon, LocationIcon } from "@/components/icons";
 import { Order } from "../page";
-import { useGetSingleOrderQuery, useUpdateOrderStatusMutation } from "@/store/api/orderApi";
+import {
+  useGetSingleOrderQuery,
+  useUpdateOrderStatusMutation,
+} from "@/store/api/orderApi";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -14,7 +17,8 @@ export default function OrderDetailPage({ params }: PageProps) {
   const { id } = use(params);
 
   const { data: dbOrder, isLoading } = useGetSingleOrderQuery(id);
-  const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
+  const [updateOrderStatus, { isLoading: isUpdating }] =
+    useUpdateOrderStatusMutation();
 
   // Status Update State & Handler
   const [selectedStatus, setSelectedStatus] = useState<string>("");
@@ -37,29 +41,33 @@ export default function OrderDetailPage({ params }: PageProps) {
     }
   };
 
-  const order: Order | null = dbOrder?.data ? {
-    dbId: dbOrder.data._id,
-    id: dbOrder.data.orderNumber,
-    customerName: dbOrder.data.customer?.name || "Unknown Customer",
-    contactName: dbOrder.data.customer?.name || "Unknown Contact",
-    email: dbOrder.data.customer?.email || "",
-    phone: dbOrder.data.customer?.phone || "",
-    address: dbOrder.data.shippingAddress?.address || "",
-    total: dbOrder.data.totalPrice,
-    date: new Date(dbOrder.data.createdAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    status: mapBackendStatus(dbOrder.data.status),
-    items: dbOrder.data.items?.map((it: any) => ({
-      name: it.name,
-      qty: it.quantity,
-      unit: it.unit === 'per_kg' ? 'kg' : it.unit === 'per_lb' ? 'lb' : 'pcs',
-      price: it.price,
-      image: it.image,
-    })) || [],
-  } : null;
+  const order: Order | null = dbOrder?.data
+    ? {
+        dbId: dbOrder.data._id,
+        id: dbOrder.data.orderNumber,
+        customerName: dbOrder.data.customer?.name || "Unknown Customer",
+        contactName: dbOrder.data.customer?.name || "Unknown Contact",
+        email: dbOrder.data.customer?.email || "",
+        phone: dbOrder.data.customer?.phone || "",
+        address: dbOrder.data.shippingAddress?.address || "",
+        total: dbOrder.data.totalPrice,
+        date: new Date(dbOrder.data.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        status: mapBackendStatus(dbOrder.data.status),
+        items:
+          dbOrder.data.items?.map((it: any) => ({
+            name: it.name,
+            qty: it.quantity,
+            unit:
+              it.unit === "per_kg" ? "kg" : it.unit === "per_lb" ? "lb" : "pcs",
+            price: it.price,
+            image: it.image,
+          })) || [],
+      }
+    : null;
 
   const mapDisplayStatusToApi = (status: string) => {
     switch (status) {
@@ -91,33 +99,19 @@ export default function OrderDetailPage({ params }: PageProps) {
       alert("Order status updated successfully!");
     } catch (err: any) {
       console.error("Status update failed:", err);
-      alert(err?.data?.message || err?.message || "Failed to update order status");
+      alert(
+        err?.data?.message || err?.message || "Failed to update order status",
+      );
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-24 font-nunito">
-        <svg
-          className="animate-spin h-8 w-8 text-brand-primary"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+        <p className="text-slate-400 text-xs font-nunito mt-4">
+          Loading order details...
+        </p>
       </div>
     );
   }

@@ -402,24 +402,31 @@ export default function CustomerDetailPage({ params }: PageProps) {
     return isAdminVerified ? "Approved" : "Pending";
   };
 
-  const customer: Customer | null = dbCustomer?.data ? {
-    id: dbCustomer.data._id,
-    name: dbCustomer.data.businessName || dbCustomer.data.name || "Unnamed Business",
-    code: dbCustomer.data.taxId || dbCustomer.data.user?._id || "",
-    contactName: dbCustomer.data.name || "No Contact Name",
-    contactEmail: dbCustomer.data.email || "",
-    phone: dbCustomer.data.phone || "",
-    businessType: dbCustomer.data.businessType || "Retail",
-    registeredDate: dbCustomer.data.createdAt ? new Date(dbCustomer.data.createdAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }) : "",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: mapBackendStatus(dbCustomer.data.isAdminVerified),
-    address: dbCustomer.data.address || "",
-  } : null;
+  const customer: Customer | null = dbCustomer?.data
+    ? {
+        id: dbCustomer.data._id,
+        name:
+          dbCustomer.data.businessName ||
+          dbCustomer.data.name ||
+          "Unnamed Business",
+        code: dbCustomer.data.taxId || dbCustomer.data.user?._id || "",
+        contactName: dbCustomer.data.name || "No Contact Name",
+        contactEmail: dbCustomer.data.email || "",
+        phone: dbCustomer.data.phone || "",
+        businessType: dbCustomer.data.businessType || "Retail",
+        registeredDate: dbCustomer.data.createdAt
+          ? new Date(dbCustomer.data.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "",
+        ordersCount: 0,
+        totalSpent: 0,
+        status: mapBackendStatus(dbCustomer.data.isAdminVerified),
+        address: dbCustomer.data.address || "",
+      }
+    : null;
 
   const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
 
@@ -453,7 +460,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
     );
     if (reason === null) return;
     try {
-      await verifyCustomer({ id: customer.id, status: "rejected", reason }).unwrap();
+      await verifyCustomer({
+        id: customer.id,
+        status: "rejected",
+        reason,
+      }).unwrap();
       alert("Customer rejected successfully!");
     } catch (err: any) {
       console.error(err);
@@ -472,7 +483,9 @@ export default function CustomerDetailPage({ params }: PageProps) {
         router.push("/dashboard/customers");
       } catch (err: any) {
         console.error(err);
-        alert(err?.data?.message || err?.message || "Failed to delete customer");
+        alert(
+          err?.data?.message || err?.message || "Failed to delete customer",
+        );
       }
     }
   };
@@ -495,27 +508,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-24 font-nunito">
-        <svg
-          className="animate-spin h-8 w-8 text-brand-primary"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+        <p className="text-slate-400 text-xs font-nunito mt-4">
+          Loading customer details...
+        </p>
       </div>
     );
   }

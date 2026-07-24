@@ -41,14 +41,16 @@ const initialOrders: any[] = [
         qty: 15,
         unit: "kg",
         price: 10.5,
-        image: "https://images.unsplash.com/photo-1606728035253-49e196302c42?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1606728035253-49e196302c42?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Chicken Wings",
         qty: 10,
         unit: "kg",
         price: 8.9,
-        image: "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -68,14 +70,16 @@ const initialOrders: any[] = [
         qty: 5,
         unit: "kg",
         price: 29.8,
-        image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Cured Beef (Pastirma)",
         qty: 3,
         unit: "pkg",
         price: 52.5,
-        image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -95,14 +99,16 @@ const initialOrders: any[] = [
         qty: 30,
         unit: "kg",
         price: 38.5,
-        image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Lamb Leg",
         qty: 20,
         unit: "each",
         price: 44.75,
-        image: "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -122,14 +128,16 @@ const initialOrders: any[] = [
         qty: 50,
         unit: "case",
         price: 14.5,
-        image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Frozen Lamb",
         qty: 80,
         unit: "case",
         price: 12.8,
-        image: "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1514516345957-556ca7d90a29?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -149,14 +157,16 @@ const initialOrders: any[] = [
         qty: 8,
         unit: "kg",
         price: 29.8,
-        image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Butcher's Meatballs",
         qty: 5,
         unit: "pack",
         price: 29.28,
-        image: "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -176,7 +186,8 @@ const initialOrders: any[] = [
         qty: 30,
         unit: "each",
         price: 9.8,
-        image: "https://images.unsplash.com/photo-1587593817642-8b98df728645?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1587593817642-8b98df728645?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -196,7 +207,8 @@ const initialOrders: any[] = [
         qty: 20,
         unit: "kg",
         price: 29.8,
-        image: "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1588168333986-5078647aa981?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -216,14 +228,16 @@ const initialOrders: any[] = [
         qty: 15,
         unit: "kg",
         price: 24.9,
-        image: "https://images.unsplash.com/photo-1529692236671-f1f6e946a88a?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1529692236671-f1f6e946a88a?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Beef Chops",
         qty: 10,
         unit: "kg",
         price: 22.8,
-        image: "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1546964124-0cce460f38ef?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -243,14 +257,16 @@ const initialOrders: any[] = [
         qty: 5,
         unit: "kg",
         price: 42.0,
-        image: "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Lamb Shoulder",
         qty: 8,
         unit: "kg",
         price: 54.0,
-        image: "https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1603048588665-791ca8aea617?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -270,14 +286,16 @@ const initialOrders: any[] = [
         qty: 10,
         unit: "kg",
         price: 38.5,
-        image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300",
       },
       {
         name: "Chicken Breast",
         qty: 20,
         unit: "kg",
         price: 11.2,
-        image: "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&q=80&w=300",
+        image:
+          "https://images.unsplash.com/photo-1604503468506-a8da13d82791?auto=format&fit=crop&q=80&w=300",
       },
     ],
   },
@@ -335,29 +353,32 @@ export default function OrdersPage() {
     }
   };
 
-  const orders: Order[] = dbOrders?.data?.result?.map((ord) => ({
-    dbId: ord._id,
-    id: ord.orderNumber,
-    customerName: ord.customer?.name || "Unknown Customer",
-    contactName: ord.customer?.name || "Unknown Contact",
-    email: ord.customer?.email || "",
-    phone: ord.customer?.phone || "",
-    address: ord.shippingAddress?.address || "",
-    total: ord.totalPrice,
-    date: new Date(ord.createdAt).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    status: mapBackendStatus(ord.status),
-    items: ord.items?.map((it) => ({
-      name: it.name,
-      qty: it.quantity,
-      unit: it.unit === 'per_kg' ? 'kg' : it.unit === 'per_lb' ? 'lb' : 'pcs',
-      price: it.price,
-      image: it.image,
-    })) || [],
-  })) || [];
+  const orders: Order[] =
+    dbOrders?.data?.result?.map((ord) => ({
+      dbId: ord._id,
+      id: ord.orderNumber,
+      customerName: ord.customer?.name || "Unknown Customer",
+      contactName: ord.customer?.name || "Unknown Contact",
+      email: ord.customer?.email || "",
+      phone: ord.customer?.phone || "",
+      address: ord.shippingAddress?.address || "",
+      total: ord.totalPrice,
+      date: new Date(ord.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      status: mapBackendStatus(ord.status),
+      items:
+        ord.items?.map((it) => ({
+          name: it.name,
+          qty: it.quantity,
+          unit:
+            it.unit === "per_kg" ? "kg" : it.unit === "per_lb" ? "lb" : "pcs",
+          price: it.price,
+          image: it.image,
+        })) || [],
+    })) || [];
 
   // Filtered List
   const filteredOrders = orders.filter((o) => {
@@ -394,7 +415,9 @@ export default function OrdersPage() {
           <p className="text-2xl font-nunito-bold text-[#D97706] leading-tight">
             {countPending}
           </p>
-          <p className="text-xs font-nunito-medium text-slate-400 mt-2">Pending</p>
+          <p className="text-xs font-nunito-medium text-slate-400 mt-2">
+            Pending
+          </p>
         </div>
 
         {/* Confirmed */}
@@ -402,7 +425,9 @@ export default function OrdersPage() {
           <p className="text-2xl font-nunito-bold text-[#3B82F6] leading-tight">
             {countConfirmed}
           </p>
-          <p className="text-xs font-nunito-medium text-slate-400 mt-2">Confirmed</p>
+          <p className="text-xs font-nunito-medium text-slate-400 mt-2">
+            Confirmed
+          </p>
         </div>
 
         {/* Preparing */}
@@ -410,7 +435,9 @@ export default function OrdersPage() {
           <p className="text-2xl font-nunito-bold text-[#F97316] leading-tight">
             {countPreparing}
           </p>
-          <p className="text-xs font-nunito-medium text-slate-400 mt-2">Preparing</p>
+          <p className="text-xs font-nunito-medium text-slate-400 mt-2">
+            Preparing
+          </p>
         </div>
 
         {/* Delivered */}
@@ -418,7 +445,9 @@ export default function OrdersPage() {
           <p className="text-2xl font-nunito-bold text-[#16A34A] leading-tight">
             {countDelivered}
           </p>
-          <p className="text-xs font-nunito-medium text-slate-400 mt-2">Delivered</p>
+          <p className="text-xs font-nunito-medium text-slate-400 mt-2">
+            Delivered
+          </p>
         </div>
 
         {/* Cancelled */}
@@ -426,7 +455,9 @@ export default function OrdersPage() {
           <p className="text-2xl font-nunito-bold text-[#DC2626] leading-tight">
             {countCancelled}
           </p>
-          <p className="text-xs font-nunito-medium text-slate-400 mt-2">Cancelled</p>
+          <p className="text-xs font-nunito-medium text-slate-400 mt-2">
+            Cancelled
+          </p>
         </div>
       </div>
 
@@ -496,7 +527,11 @@ export default function OrdersPage() {
         <div className="flex items-center gap-4 text-xs font-nunito">
           <span className="text-slate-400">{filteredOrders.length} orders</span>
           <span className="text-[#16A34A] font-nunito-bold text-sm">
-            Revenue: ${deliveredRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            Revenue: $
+            {deliveredRevenue.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
         </div>
       </div>
@@ -504,27 +539,11 @@ export default function OrdersPage() {
       {/* Table Container */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center p-12">
-            <svg
-              className="animate-spin h-8 w-8 text-brand-primary"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+            <p className="text-slate-400 text-xs font-nunito mt-4">
+              Loading orders...
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -627,7 +646,9 @@ export default function OrdersPage() {
                     {/* Action */}
                     <td className="px-6 py-4 text-right pr-8">
                       <button
-                        onClick={() => router.push(`/dashboard/orders/${o.dbId}`)}
+                        onClick={() =>
+                          router.push(`/dashboard/orders/${o.dbId}`)
+                        }
                         className="px-3 py-1 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-nunito-semibold cursor-pointer shadow-sm transition-colors"
                       >
                         View

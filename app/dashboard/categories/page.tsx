@@ -115,7 +115,9 @@ export default function CategoriesPage() {
 
   // Delete Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(
+    null,
+  );
 
   const handleDeleteClick = (id: string) => {
     setDeletingCategoryId(id);
@@ -132,7 +134,11 @@ export default function CategoriesPage() {
         }
       } catch (err: any) {
         console.error("Delete error:", err);
-        alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+        alert(
+          err?.data?.message ||
+            err?.message ||
+            "An error occurred while deleting.",
+        );
       } finally {
         setIsSaving(false);
         setIsDeleteModalOpen(false);
@@ -212,7 +218,9 @@ export default function CategoriesPage() {
       }
     } catch (err: any) {
       console.error("Save error:", err);
-      alert(err?.data?.message || err?.message || "An error occurred while saving.");
+      alert(
+        err?.data?.message || err?.message || "An error occurred while saving.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -222,12 +230,13 @@ export default function CategoriesPage() {
   const filteredCategories = categories;
 
   return (
-
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-nunito-bold text-slate-800">Categories</h1>
+          <h1 className="text-2xl font-nunito-bold text-slate-800">
+            Categories
+          </h1>
           <p className="text-sm font-nunito text-slate-500 mt-1">
             {totalItems} product categories
           </p>
@@ -241,9 +250,11 @@ export default function CategoriesPage() {
       </div>
 
       {isGetLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-100 rounded-3xl shadow-sm">
-          <div className="w-8 h-8 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-sm font-nunito text-slate-500">Loading categories...</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
+          <p className="text-slate-400 text-xs font-nunito mt-4">
+            Loading categories...
+          </p>
         </div>
       ) : (
         <>
@@ -395,16 +406,28 @@ export default function CategoriesPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm mt-4">
               {/* Left: Range and Info */}
               <div className="text-xs font-nunito-medium text-slate-500">
-                Showing <span className="font-nunito-bold text-slate-700">{Math.min((currentPage - 1) * limit + 1, totalItems)}</span> to{" "}
-                <span className="font-nunito-bold text-slate-700">{Math.min(currentPage * limit, totalItems)}</span> of{" "}
-                <span className="font-nunito-bold text-slate-700">{totalItems}</span> entries
+                Showing{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {Math.min((currentPage - 1) * limit + 1, totalItems)}
+                </span>{" "}
+                to{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {Math.min(currentPage * limit, totalItems)}
+                </span>{" "}
+                of{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {totalItems}
+                </span>{" "}
+                entries
               </div>
 
               {/* Right: Controls & Limit Select */}
               <div className="flex items-center gap-6">
                 {/* Limit Selector */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-nunito-medium text-slate-500">Show:</span>
+                  <span className="text-xs font-nunito-medium text-slate-500">
+                    Show:
+                  </span>
                   <div className="relative flex items-center">
                     <select
                       value={limit}
@@ -420,8 +443,18 @@ export default function CategoriesPage() {
                       <option value={50}>50</option>
                     </select>
                     <div className="absolute right-2.5 pointer-events-none text-slate-400">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -436,35 +469,59 @@ export default function CategoriesPage() {
                     className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
                     title="Previous Page"
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
                     </svg>
                   </button>
 
                   {/* Page Numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
-                        p === currentPage
-                          ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
-                          : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
+                          p === currentPage
+                            ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
+                            : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
 
                   {/* Next Button */}
                   <button
                     disabled={currentPage === totalPages}
-                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
                     title="Next Page"
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -537,7 +594,11 @@ export default function CategoriesPage() {
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-3">
                       <button
                         type="button"
-                        onClick={() => document.getElementById("category-file-input")?.click()}
+                        onClick={() =>
+                          document
+                            .getElementById("category-file-input")
+                            ?.click()
+                        }
                         className="px-3.5 py-2 bg-white text-slate-700 rounded-xl text-xs font-nunito-semibold shadow hover:bg-slate-50 cursor-pointer"
                       >
                         Change
@@ -558,7 +619,9 @@ export default function CategoriesPage() {
                   <div
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    onClick={() => document.getElementById("category-file-input")?.click()}
+                    onClick={() =>
+                      document.getElementById("category-file-input")?.click()
+                    }
                     className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-2xl bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400 group-hover:text-slate-500 transition-colors shadow-sm bg-white">
@@ -595,8 +658,12 @@ export default function CategoriesPage() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                <span>{modalMode === "add" ? "Save Category" : "Update Category"}</span>
+                {isSaving && (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
+                <span>
+                  {modalMode === "add" ? "Save Category" : "Update Category"}
+                </span>
               </button>
             </div>
           </div>
@@ -641,7 +708,8 @@ export default function CategoriesPage() {
                 <span className="font-nunito-bold text-slate-800">
                   {categories.find((c) => c.id === deletingCategoryId)?.name}
                 </span>
-                ? This action cannot be undone and will affect associated products.
+                ? This action cannot be undone and will affect associated
+                products.
               </p>
             </div>
 
@@ -658,7 +726,9 @@ export default function CategoriesPage() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isSaving && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                {isSaving && (
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
                 <span>Delete Category</span>
               </button>
             </div>
