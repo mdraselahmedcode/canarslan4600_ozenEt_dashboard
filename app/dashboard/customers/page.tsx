@@ -18,7 +18,7 @@ interface Customer {
   status: "Approved" | "Pending" | "Rejected";
 }
 
-const initialCustomers: Customer[] = [
+const initialCustomers: any[] = [
   {
     id: "1",
     name: "Bosphorus Restaurant Group",
@@ -177,33 +177,93 @@ const initialCustomers: Customer[] = [
   },
 ];
 
+import { useEffect } from "react";
+import {
+  useGetAllCustomersQuery,
+  useVerifyCustomerMutation,
+  useDeleteCustomerMutation,
+} from "@/store/api/customerApi";
+
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedFilter, setSelectedFilter] = useState<
     "All" | "Approved" | "Pending" | "Rejected"
   >("All");
 
-  // Handle Approve action
-  const handleApprove = (id: string) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Approved" } : c)),
-    );
-  };
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
 
-  // Handle Reject action
-  const handleReject = (id: string) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: "Rejected" } : c)),
-    );
-  };
+  const { data: dbCustomers, isLoading } = useGetAllCustomersQuery({
+    searchTerm: debouncedSearch || undefined,
+    limit: 100,
+  });
 
-  // Handle Delete action
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this customer?")) {
-      setCustomers((prev) => prev.filter((c) => c.id !== id));
+  const [verifyCustomer] = useVerifyCustomerMutation();
+  const [deleteCustomer] = useDeleteCustomerMutation();
+
+  const handleApprove = async (id: string) => {
+    try {
+      await verifyCustomer({ id, status: "approved" }).unwrap();
+      alert("Customer approved successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.data?.message || err?.message || "Failed to approve customer");
     }
   };
+
+  const handleReject = async (id: string) => {
+    const reason = prompt(
+      "Enter reason for rejection:",
+      "Business information could not be verified",
+    );
+    if (reason === null) return;
+    try {
+      await verifyCustomer({ id, status: "rejected", reason }).unwrap();
+      alert("Customer rejected successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.data?.message || err?.message || "Failed to reject customer");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this customer?")) {
+      try {
+        await deleteCustomer(id).unwrap();
+        alert("Customer deleted successfully!");
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.data?.message || err?.message || "Failed to delete customer");
+      }
+    }
+  };
+
+  const mapBackendStatus = (isAdminVerified: boolean): Customer["status"] => {
+    return isAdminVerified ? "Approved" : "Pending";
+  };
+
+  const customers: Customer[] = dbCustomers?.data?.result?.map((cust) => ({
+    id: cust._id,
+    name: cust.businessName || cust.name || "Unnamed Business",
+    code: cust.taxId || cust.user?._id || "",
+    contactName: cust.name || "No Contact Name",
+    contactEmail: cust.email || "",
+    phone: cust.phone || "",
+    businessType: cust.businessType || "Retail",
+    registeredDate: cust.createdAt ? new Date(cust.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }) : "",
+    ordersCount: 0,
+    totalSpent: 0,
+    status: mapBackendStatus(cust.isAdminVerified),
+  })) || [];
 
   // Count items for Stats Grid
   const countApproved = customers.filter((c) => c.status === "Approved").length;
@@ -215,17 +275,7 @@ export default function CustomersPage() {
     // Status Filter
     const matchesStatus =
       selectedFilter === "All" || c.status === selectedFilter;
-
-    // Search Term Filter
-    const query = searchTerm.toLowerCase();
-    const matchesSearch =
-      c.name.toLowerCase().includes(query) ||
-      c.code.toLowerCase().includes(query) ||
-      c.contactName.toLowerCase().includes(query) ||
-      c.contactEmail.toLowerCase().includes(query) ||
-      c.businessType.toLowerCase().includes(query);
-
-    return matchesStatus && matchesSearch;
+    return matchesStatus;
   });
 
   return (
@@ -377,188 +427,213 @@ export default function CustomersPage() {
 
       {/* Customers Table Container */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-50">
-                <th className="text-left px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Company
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Business Type
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Registered
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Orders
-                </th>
-                <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="text-right px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCustomers.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="text-center py-10 text-sm font-nunito text-slate-400"
-                  >
-                    No customers found matching the criteria.
-                  </td>
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <svg
+              className="animate-spin h-8 w-8 text-brand-primary"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-50">
+                  <th className="text-left px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Company
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Business Type
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Registered
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Orders
+                  </th>
+                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-right px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ) : (
-                filteredCustomers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50 transition-colors"
-                  >
-                    {/* Company Column */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
-                          <BuildingIcon size={14} color="currentColor" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
-                            {customer.name}
-                          </p>
-                          <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                            {customer.code}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Contact Column */}
-                    <td className="px-4 py-4">
-                      <div>
-                        <p className="text-sm font-nunito-semibold text-slate-700 leading-tight">
-                          {customer.contactName}
-                        </p>
-                        <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                          {customer.contactEmail}
-                        </p>
-                      </div>
-                    </td>
-
-                    {/* Phone Column */}
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-nunito text-slate-500">
-                        {customer.phone}
-                      </span>
-                    </td>
-
-                    {/* Business Type Column */}
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-nunito text-slate-500">
-                        {customer.businessType}
-                      </span>
-                    </td>
-
-                    {/* Registered Date Column */}
-                    <td className="px-4 py-4">
-                      <span className="text-sm font-nunito text-slate-500">
-                        {customer.registeredDate}
-                      </span>
-                    </td>
-
-                    {/* Orders/Total Revenue Column */}
-                    <td className="px-4 py-4">
-                      {customer.status === "Approved" ? (
-                        <div>
-                          <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
-                            {customer.ordersCount}
-                          </p>
-                          <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                            {`$${customer.totalSpent.toLocaleString()}`}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-sm font-nunito text-slate-400">
-                          —
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Status Column */}
-                    <td className="px-4 py-4">
-                      {customer.status === "Approved" && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
-                          Approved
-                        </span>
-                      )}
-                      {customer.status === "Pending" && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
-                          Pending
-                        </span>
-                      )}
-                      {customer.status === "Rejected" && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
-                          Rejected
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions Column */}
-                    <td className="px-6 py-4 text-right">
-                      {customer.status === "Pending" ? (
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/dashboard/customers/${customer.id}`}
-                            title="View Customer"
-                            className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
-                          >
-                            <EyeIcon size={14} color="currentColor" />
-                          </Link>
-                          <button
-                            onClick={() => handleApprove(customer.id)}
-                            className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] rounded-lg transition-all duration-200 cursor-pointer"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReject(customer.id)}
-                            className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-lg transition-all duration-200 cursor-pointer"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/dashboard/customers/${customer.id}`}
-                            title="View Customer"
-                            className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
-                          >
-                            <EyeIcon size={14} color="currentColor" />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(customer.id)}
-                            title="Delete Customer"
-                            className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg border border-red-200 transition-all duration-200 cursor-pointer"
-                          >
-                            <DeleteIcon size={14} color="currentColor" />
-                          </button>
-                        </div>
-                      )}
+              </thead>
+              <tbody>
+                {filteredCustomers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={8}
+                      className="text-center py-10 text-sm font-nunito text-slate-400"
+                    >
+                      No customers found matching the criteria.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  filteredCustomers.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50 transition-colors"
+                    >
+                      {/* Company Column */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
+                            <BuildingIcon size={14} color="currentColor" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
+                              {customer.name}
+                            </p>
+                            <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
+                              {customer.code}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Contact Column */}
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="text-sm font-nunito-semibold text-slate-700 leading-tight">
+                            {customer.contactName}
+                          </p>
+                          <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
+                            {customer.contactEmail}
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* Phone Column */}
+                      <td className="px-4 py-4">
+                        <span className="text-sm font-nunito text-slate-500">
+                          {customer.phone}
+                        </span>
+                      </td>
+
+                      {/* Business Type Column */}
+                      <td className="px-4 py-4">
+                        <span className="text-sm font-nunito text-slate-500">
+                          {customer.businessType}
+                        </span>
+                      </td>
+
+                      {/* Registered Date Column */}
+                      <td className="px-4 py-4">
+                        <span className="text-sm font-nunito text-slate-500">
+                          {customer.registeredDate}
+                        </span>
+                      </td>
+
+                      {/* Orders/Total Revenue Column */}
+                      <td className="px-4 py-4">
+                        {customer.status === "Approved" ? (
+                          <div>
+                            <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
+                              {customer.ordersCount}
+                            </p>
+                            <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
+                              {`$${customer.totalSpent.toLocaleString()}`}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-nunito text-slate-400">
+                            —
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status Column */}
+                      <td className="px-4 py-4">
+                        {customer.status === "Approved" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
+                            Approved
+                          </span>
+                        )}
+                        {customer.status === "Pending" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
+                            Pending
+                          </span>
+                        )}
+                        {customer.status === "Rejected" && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+                            Rejected
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions Column */}
+                      <td className="px-6 py-4 text-right">
+                        {customer.status === "Pending" ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/dashboard/customers/${customer.id}`}
+                              title="View Customer"
+                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                            >
+                              <EyeIcon size={14} color="currentColor" />
+                            </Link>
+                            <button
+                              onClick={() => handleApprove(customer.id)}
+                              className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] rounded-lg transition-all duration-200 cursor-pointer animate-pulse"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(customer.id)}
+                              className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-lg transition-all duration-200 cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              href={`/dashboard/customers/${customer.id}`}
+                              title="View Customer"
+                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                            >
+                              <EyeIcon size={14} color="currentColor" />
+                            </Link>
+                            <button
+                              onClick={() => handleDelete(customer.id)}
+                              title="Delete Customer"
+                              className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg border border-red-200 transition-all duration-200 cursor-pointer"
+                            >
+                              <DeleteIcon size={14} color="currentColor" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,10 @@ import {
   DollarIcon,
 } from "@/components/icons";
 import { useRouter } from "next/navigation";
+import { useGetAllCustomersQuery } from "@/store/api/customerApi";
+import { useGetAllProductsQuery } from "@/store/api/productApi";
+import { useGetAllCategoriesQuery } from "@/store/api/categoryApi";
+import { useGetAllOrdersQuery } from "@/store/api/orderApi";
 
 /* ------------------------------------------------------------------ */
 /*  Mock Data                                                          */
@@ -148,6 +152,86 @@ export default function DashboardPage() {
     year: "numeric",
   });
 
+  const { data: dbCustomers, isLoading: isCustomersLoading } = useGetAllCustomersQuery({ limit: 100 });
+  const { data: dbProducts, isLoading: isProductsLoading } = useGetAllProductsQuery({ limit: 100 });
+  const { data: dbCategories, isLoading: isCategoriesLoading } = useGetAllCategoriesQuery({ limit: 100 });
+  const { data: dbOrders, isLoading: isOrdersLoading } = useGetAllOrdersQuery({ limit: 100 });
+
+  const isLoading = isCustomersLoading || isProductsLoading || isCategoriesLoading || isOrdersLoading;
+
+  // Customers calculations
+  const totalCustomers = dbCustomers?.data?.result?.length || 0;
+  const pendingCustomers = dbCustomers?.data?.result?.filter((c) => !c.isAdminVerified) || [];
+  const pendingCustomersCount = pendingCustomers.length;
+
+  // Products calculations
+  const totalProducts = dbProducts?.data?.result?.length || 0;
+  const outOfStockProductsCount = dbProducts?.data?.result?.filter((p) => p.availability === "out_of_stock").length || 0;
+  const totalCategories = dbCategories?.data?.result?.length || 0;
+
+  // Orders calculations
+  const allOrders = dbOrders?.data?.result || [];
+  const totalOrdersCount = allOrders.length;
+  const pendingOrdersCount = allOrders.filter((o) => o.status === "received").length;
+  const deliveredOrdersCount = allOrders.filter((o) => o.status === "delivered").length;
+  const totalRevenue = allOrders
+    .filter((o) => o.status === "delivered")
+    .reduce((sum, o) => sum + o.totalPrice, 0);
+
+  // Recent orders: pick top 7 latest orders
+  const recentOrders = allOrders.slice(0, 7).map((ord) => ({
+    dbId: ord._id,
+    id: ord.orderNumber,
+    customer: ord.customer?.name || "Unknown Customer",
+    items: ord.items?.length || 0,
+    total: ord.totalPrice,
+    date: new Date(ord.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: ord.status === "received" ? "Pending" : ord.status === "confirmed" ? "Confirmed" : ord.status === "preparing" ? "Preparing" : ord.status === "delivered" ? "Delivered" : "Cancelled",
+  }));
+
+  // Pending approvals: map customers where isAdminVerified is false
+  const pendingApprovals = pendingCustomers.slice(0, 5).map((cust) => ({
+    id: cust._id,
+    name: cust.businessName || cust.name || "Unnamed Business",
+    type: cust.businessType || "Retail",
+    date: new Date(cust.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+  }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24 font-nunito">
+        <svg
+          className="animate-spin h-8 w-8 text-brand-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       {/* Page Header */}
@@ -173,30 +257,30 @@ export default function DashboardPage() {
         <StatCard
           icon={<DoubleManIcon size={22} color="#1D4ED8" />}
           iconBgClass="bg-blue-50"
-          value={12}
+          value={totalCustomers}
           label="Total Customers"
-          subtitle="3 pending"
+          subtitle={`${pendingCustomersCount} pending`}
         />
         <StatCard
           icon={<OneManWithCheckIcon size={22} color="#D97706" />}
           iconBgClass="bg-amber-50"
-          value={5}
+          value={pendingCustomersCount}
           label="Pending Approval"
-          attention
+          attention={pendingCustomersCount > 0}
         />
         <StatCard
           icon={<TotalProductsBoxIcon size={22} color="#059669" />}
           iconBgClass="bg-emerald-50"
-          value={18}
+          value={totalProducts}
           label="Total Products"
-          subtitle="5 categories"
+          subtitle={`${totalCategories} categories`}
         />
         <StatCard
           icon={<OutOfStockDangerIcon size={22} color="#DC2626" />}
           iconBgClass="bg-red-50"
-          value={1}
+          value={outOfStockProductsCount}
           label="Out of Stock"
-          attention
+          attention={outOfStockProductsCount > 0}
         />
       </div>
 
@@ -205,27 +289,27 @@ export default function DashboardPage() {
         <StatCard
           icon={<TotalOrdersIcon size={22} color="#059669" />}
           iconBgClass="bg-emerald-50"
-          value={10}
+          value={totalOrdersCount}
           label="Total Orders"
         />
         <StatCard
           icon={<ClockIcon size={22} color="#EA580C" />}
           iconBgClass="bg-orange-50"
-          value={2}
+          value={pendingOrdersCount}
           label="Pending Orders"
-          attention
+          attention={pendingOrdersCount > 0}
         />
         <StatCard
           icon={<DoubleCheckIcon size={22} color="#16A34A" />}
           iconBgClass="bg-emerald-50"
-          value={3}
+          value={deliveredOrdersCount}
           label="Delivered"
           subtitle="all time"
         />
         <StatCard
           icon={<DollarIcon size={22} color="#0891B2" />}
           iconBgClass="bg-cyan-50"
-          value="$1,240.3"
+          value={`$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           label="Total Revenue"
           subtitle="from completed orders"
         />
@@ -286,49 +370,57 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50  transition-colors"
-                  >
-                    <td className="px-6 py-3.5">
-                      <span className="text-sm font-nunito-semibold text-slate-700">
-                        {order.id}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div>
-                        <p className="text-sm font-nunito-medium text-slate-700 leading-tight">
-                          {order.customer}
-                        </p>
-                        <p className="text-[11px] font-nunito text-slate-400">
-                          {order.items} item{order.items !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="text-sm font-nunito-bold text-[#B91C1C]">
-                        ${order.total.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <span className="text-sm font-nunito text-slate-500">
-                        {order.date}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Link
-                        href={`/dashboard/orders`}
-                        className="text-sm font-nunito-semibold px-[10px] py-[4px] bg-slate-200 rounded-[10px] text-slate-700 hover:bg-slate-300 hover:text-slate-600 transition-colors"
-                      >
-                        View
-                      </Link>
+                {recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-sm text-slate-400 font-nunito">
+                      No recent orders found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  recentOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50  transition-colors"
+                    >
+                      <td className="px-6 py-3.5">
+                        <span className="text-sm font-nunito-semibold text-slate-700">
+                          {order.id}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div>
+                          <p className="text-sm font-nunito-medium text-slate-700 leading-tight">
+                            {order.customer}
+                          </p>
+                          <p className="text-[11px] font-nunito text-slate-400">
+                            {order.items} item{order.items !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-sm font-nunito-bold text-[#B91C1C]">
+                          ${order.total.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-sm font-nunito text-slate-500">
+                          {order.date}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <button
+                          onClick={() => router.push(`/dashboard/orders/${order.dbId}`)}
+                          className="text-sm font-nunito-semibold px-[10px] py-[4px] bg-slate-200 rounded-[10px] text-slate-700 hover:bg-slate-300 hover:text-slate-600 transition-colors cursor-pointer select-none"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -351,37 +443,43 @@ export default function DashboardPage() {
 
           {/* Approval Cards */}
           <div className="p-4 space-y-3 max-h-[520px] overflow-y-auto">
-            {pendingApprovals.map((customer, index) => (
-              <div
-                key={index}
-                className="bg-slate-50/70 rounded-xl p-4 border border-amber-200 hover:border-amber-300 transition-all duration-200"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-nunito-bold text-slate-700 truncate">
-                      {customer.name}
-                    </p>
-                    <p className="text-[11px] font-nunito text-slate-400">
-                      {customer.type}
-                    </p>
-                  </div>
-                  <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-nunito-bold px-2.5 py-0.5 rounded-full shrink-0 ml-2">
-                    Pending
-                  </span>
-                </div>
-                <p className="text-[11px] font-nunito text-slate-400 mb-2.5">
-                  {customer.date}
-                </p>
-                <button
-                  onClick={() =>
-                    router.push(`/dashboard/customers/${customer.id}`)
-                  }
-                  className="text-xs font-nunito-bold text-slate-600 hover:text-slate-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+            {pendingApprovals.length === 0 ? (
+              <p className="text-center text-sm text-slate-400 font-nunito py-8">
+                No pending approvals.
+              </p>
+            ) : (
+              pendingApprovals.map((customer, index) => (
+                <div
+                  key={index}
+                  className="bg-slate-50/70 rounded-xl p-4 border border-amber-200 hover:border-amber-300 transition-all duration-200"
                 >
-                  View
-                </button>
-              </div>
-            ))}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-nunito-bold text-slate-700 truncate">
+                        {customer.name}
+                      </p>
+                      <p className="text-[11px] font-nunito text-slate-400">
+                        {customer.type}
+                      </p>
+                    </div>
+                    <span className="bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-nunito-bold px-2.5 py-0.5 rounded-full shrink-0 ml-2">
+                      Pending
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-nunito text-slate-400 mb-2.5">
+                    {customer.date}
+                  </p>
+                  <button
+                    onClick={() =>
+                      router.push(`/dashboard/customers/${customer.id}`)
+                    }
+                    className="text-xs font-nunito-bold text-slate-600 hover:text-slate-800 bg-blue-50 hover:bg-blue-100 px-3.5 py-1.5 rounded-lg transition-all duration-200 cursor-pointer"
+                  >
+                    View
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

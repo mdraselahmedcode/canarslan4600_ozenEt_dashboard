@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, use } from "react";
+import React, { useState, use } from "react";
 import Link from "next/link";
 import { BackIcon, LocationIcon } from "@/components/icons";
 import { Order } from "../page";
+import { useGetSingleOrderQuery, useUpdateOrderStatusMutation } from "@/store/api/orderApi";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -11,40 +12,115 @@ interface PageProps {
 
 export default function OrderDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const [order, setOrder] = useState<Order | null>(null);
 
-  // Load order details from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("ozenet_orders");
-    if (saved) {
-      const list: Order[] = JSON.parse(saved);
-      const found = list.find((o) => o.id === "#" + id);
-      if (found) {
-        setOrder(found);
-      }
-    }
-  }, [id]);
+  const { data: dbOrder, isLoading } = useGetSingleOrderQuery(id);
+  const [updateOrderStatus, { isLoading: isUpdating }] = useUpdateOrderStatusMutation();
 
   // Status Update State & Handler
   const [selectedStatus, setSelectedStatus] = useState<string>("");
 
-  const handleStatusUpdate = () => {
-    if (!selectedStatus || !order) return;
-
-    const saved = localStorage.getItem("ozenet_orders");
-    if (saved) {
-      const list: Order[] = JSON.parse(saved);
-      const updatedList = list.map((o) =>
-        o.id === order.id
-          ? { ...o, status: selectedStatus as Order["status"] }
-          : o,
-      );
-      localStorage.setItem("ozenet_orders", JSON.stringify(updatedList));
-      setOrder({ ...order, status: selectedStatus as Order["status"] });
-      setSelectedStatus(""); // reset select
-      alert("Order status updated successfully!");
+  const mapBackendStatus = (status: string): Order["status"] => {
+    switch (status?.toLowerCase()) {
+      case "received":
+        return "Pending";
+      case "confirmed":
+        return "Confirmed";
+      case "preparing":
+        return "Preparing";
+      case "delivered":
+        return "Delivered";
+      case "cancelled":
+      case "rejected":
+        return "Cancelled";
+      default:
+        return "Pending";
     }
   };
+
+  const order: Order | null = dbOrder?.data ? {
+    dbId: dbOrder.data._id,
+    id: dbOrder.data.orderNumber,
+    customerName: dbOrder.data.customer?.name || "Unknown Customer",
+    contactName: dbOrder.data.customer?.name || "Unknown Contact",
+    email: dbOrder.data.customer?.email || "",
+    phone: dbOrder.data.customer?.phone || "",
+    address: dbOrder.data.shippingAddress?.address || "",
+    total: dbOrder.data.totalPrice,
+    date: new Date(dbOrder.data.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: mapBackendStatus(dbOrder.data.status),
+    items: dbOrder.data.items?.map((it: any) => ({
+      name: it.name,
+      qty: it.quantity,
+      unit: it.unit === 'per_kg' ? 'kg' : it.unit === 'per_lb' ? 'lb' : 'pcs',
+      price: it.price,
+      image: it.image,
+    })) || [],
+  } : null;
+
+  const mapDisplayStatusToApi = (status: string) => {
+    switch (status) {
+      case "Pending":
+        return "received";
+      case "Confirmed":
+        return "confirmed";
+      case "Preparing":
+        return "preparing";
+      case "Delivered":
+        return "delivered";
+      case "Cancelled":
+        return "cancelled";
+      default:
+        return status;
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedStatus || !order) return;
+    try {
+      const apiStatus = mapDisplayStatusToApi(selectedStatus);
+      await updateOrderStatus({
+        id,
+        status: apiStatus,
+        note: `Status updated to ${selectedStatus} by admin`,
+      }).unwrap();
+      setSelectedStatus("");
+      alert("Order status updated successfully!");
+    } catch (err: any) {
+      console.error("Status update failed:", err);
+      alert(err?.data?.message || err?.message || "Failed to update order status");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24 font-nunito">
+        <svg
+          className="animate-spin h-8 w-8 text-brand-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -52,7 +128,7 @@ export default function OrderDetailPage({ params }: PageProps) {
         <p className="text-slate-500">Order not found.</p>
         <Link
           href="/dashboard/orders"
-          className="text-brand-primary mt-4 inline-block hover:underline"
+          className="text-[#C4202B] mt-4 inline-block hover:underline"
         >
           Back to Orders
         </Link>

@@ -24,7 +24,7 @@ export interface Order {
   status: "Pending" | "Confirmed" | "Preparing" | "Delivered" | "Cancelled";
 }
 
-const initialOrders: Order[] = [
+const initialOrders: any[] = [
   {
     id: "#OE-2026-010",
     customerName: "Bosphorus Restaurant Group",
@@ -283,30 +283,86 @@ const initialOrders: Order[] = [
   },
 ];
 
+import { useGetAllOrdersQuery } from "@/store/api/orderApi";
+
+export interface Order {
+  dbId: string;
+  id: string;
+  customerName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  address: string;
+  items: OrderItem[];
+  total: number;
+  date: string;
+  status: "Pending" | "Confirmed" | "Preparing" | "Delivered" | "Cancelled";
+}
+
 export default function OrdersPage() {
   const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // Load from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("ozenet_orders");
-    if (saved) {
-      setOrders(JSON.parse(saved));
-    } else {
-      localStorage.setItem("ozenet_orders", JSON.stringify(initialOrders));
-      setOrders(initialOrders);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const { data: dbOrders, isLoading } = useGetAllOrdersQuery({
+    searchTerm: debouncedSearch || undefined,
+    limit: 100,
+  });
+
+  const mapBackendStatus = (status: string): Order["status"] => {
+    switch (status?.toLowerCase()) {
+      case "received":
+        return "Pending";
+      case "confirmed":
+        return "Confirmed";
+      case "preparing":
+        return "Preparing";
+      case "delivered":
+        return "Delivered";
+      case "cancelled":
+      case "rejected":
+        return "Cancelled";
+      default:
+        return "Pending";
     }
-  }, []);
+  };
+
+  const orders: Order[] = dbOrders?.data?.result?.map((ord) => ({
+    dbId: ord._id,
+    id: ord.orderNumber,
+    customerName: ord.customer?.name || "Unknown Customer",
+    contactName: ord.customer?.name || "Unknown Contact",
+    email: ord.customer?.email || "",
+    phone: ord.customer?.phone || "",
+    address: ord.shippingAddress?.address || "",
+    total: ord.totalPrice,
+    date: new Date(ord.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: mapBackendStatus(ord.status),
+    items: ord.items?.map((it) => ({
+      name: it.name,
+      qty: it.quantity,
+      unit: it.unit === 'per_kg' ? 'kg' : it.unit === 'per_lb' ? 'lb' : 'pcs',
+      price: it.price,
+      image: it.image,
+    })) || [],
+  })) || [];
 
   // Filtered List
   const filteredOrders = orders.filter((o) => {
-    const query = searchTerm.toLowerCase();
-    const matchesSearch =
-      o.id.toLowerCase().includes(query) || o.customerName.toLowerCase().includes(query);
     const matchesStatus = statusFilter === "All" || o.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 
   // Calculate dynamic stats
@@ -447,117 +503,142 @@ export default function OrdersPage() {
 
       {/* Table Container */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[900px]">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/50">
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider pl-4">
-                  Order
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
-                  Items
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-6">
-                  Total
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
-                  Date
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
-                  Status
-                </th>
-                <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-8">
-                  Action
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredOrders.map((o) => (
-                <tr
-                  key={o.id}
-                  className="hover:bg-slate-50/30 transition-all duration-150"
-                >
-                  {/* Order ID */}
-                  <td className="px-6 py-4 pl-4 font-nunito-bold text-slate-800 text-sm">
-                    {o.id}
-                  </td>
-
-                  {/* Customer Name */}
-                  <td className="px-6 py-4 text-sm font-nunito-semibold text-slate-600">
-                    {o.customerName}
-                  </td>
-
-                  {/* Items */}
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
-                      {o.items.map((item, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-slate-50 text-slate-500 border border-slate-200/50 rounded-lg text-[10px] font-nunito px-2 py-0.5"
-                        >
-                          {item.name.split(" ")[0]} ×{item.qty}
-                          {item.unit}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Total */}
-                  <td className="px-6 py-4 text-right pr-6 font-nunito-bold text-[#C4202B] text-sm">
-                    ${o.total.toFixed(2)}
-                  </td>
-
-                  {/* Date */}
-                  <td className="px-6 py-4 text-center text-xs font-nunito text-slate-400">
-                    {o.date}
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4 text-center">
-                    {o.status === "Pending" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
-                        Pending
-                      </span>
-                    )}
-                    {o.status === "Confirmed" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-blue-50 text-[#3B82F6] border border-[#DBEAFE]">
-                        Confirmed
-                      </span>
-                    )}
-                    {o.status === "Preparing" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-orange-50 text-[#F97316] border border-[#FFEDD5]">
-                        Preparing
-                      </span>
-                    )}
-                    {o.status === "Delivered" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
-                        Delivered
-                      </span>
-                    )}
-                    {o.status === "Cancelled" && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
-                        Cancelled
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Action */}
-                  <td className="px-6 py-4 text-right pr-8">
-                    <button
-                      onClick={() => router.push(`/dashboard/orders/${o.id.replace("#", "")}`)}
-                      className="px-3 py-1 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-nunito-semibold cursor-pointer shadow-sm transition-colors"
-                    >
-                      View
-                    </button>
-                  </td>
+        {isLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <svg
+              className="animate-spin h-8 w-8 text-brand-primary"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[900px]">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/50">
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider pl-4">
+                    Order
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
+                    Items
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-6">
+                    Total
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                    Date
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-center">
+                    Status
+                  </th>
+                  <th className="px-6 py-3.5 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-8">
+                    Action
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredOrders.map((o) => (
+                  <tr
+                    key={o.dbId}
+                    className="hover:bg-slate-50/30 transition-all duration-150"
+                  >
+                    {/* Order ID */}
+                    <td className="px-6 py-4 pl-4 font-nunito-bold text-slate-800 text-sm">
+                      {o.id}
+                    </td>
+
+                    {/* Customer Name */}
+                    <td className="px-6 py-4 text-sm font-nunito-semibold text-slate-600">
+                      {o.customerName}
+                    </td>
+
+                    {/* Items */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+                        {o.items.map((item, idx) => (
+                          <span
+                            key={idx}
+                            className="bg-slate-50 text-slate-500 border border-slate-200/50 rounded-lg text-[10px] font-nunito px-2 py-0.5"
+                          >
+                            {item.name.split(" ")[0]} ×{item.qty}
+                            {item.unit}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+
+                    {/* Total */}
+                    <td className="px-6 py-4 text-right pr-6 font-nunito-bold text-[#C4202B] text-sm">
+                      ${o.total.toFixed(2)}
+                    </td>
+
+                    {/* Date */}
+                    <td className="px-6 py-4 text-center text-xs font-nunito text-slate-400">
+                      {o.date}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-6 py-4 text-center">
+                      {o.status === "Pending" && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
+                          Pending
+                        </span>
+                      )}
+                      {o.status === "Confirmed" && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-blue-50 text-[#3B82F6] border border-[#DBEAFE]">
+                          Confirmed
+                        </span>
+                      )}
+                      {o.status === "Preparing" && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-orange-50 text-[#F97316] border border-[#FFEDD5]">
+                          Preparing
+                        </span>
+                      )}
+                      {o.status === "Delivered" && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
+                          Delivered
+                        </span>
+                      )}
+                      {o.status === "Cancelled" && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+                          Cancelled
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Action */}
+                    <td className="px-6 py-4 text-right pr-8">
+                      <button
+                        onClick={() => router.push(`/dashboard/orders/${o.dbId}`)}
+                        className="px-3 py-1 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-xs font-nunito-semibold cursor-pointer shadow-sm transition-colors"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

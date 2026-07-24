@@ -15,6 +15,11 @@ import {
   StoreIcon,
   SaveIcon,
 } from "@/components/icons";
+import {
+  useGetSingleCustomerQuery,
+  useVerifyCustomerMutation,
+  useDeleteCustomerMutation,
+} from "@/store/api/customerApi";
 
 interface Customer {
   id: string;
@@ -387,16 +392,36 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
 
-  // Find customer or fallback to Brooklyn Artisan Kitchen (ID: 3)
-  const customer = mockCustomers.find((c) => c.id === id) || mockCustomers[2];
+  const { data: dbCustomer, isLoading } = useGetSingleCustomerQuery(id);
+  const [verifyCustomer] = useVerifyCustomerMutation();
+  const [deleteCustomer] = useDeleteCustomerMutation();
 
   const [activeTab, setActiveTab] = useState<"info" | "pricing">("info");
 
-  const [customPrices, setCustomPrices] = useState<Record<string, string>>(
-    () => {
-      return initialCustomPrices[customer.id] || {};
-    },
-  );
+  const mapBackendStatus = (isAdminVerified: boolean): Customer["status"] => {
+    return isAdminVerified ? "Approved" : "Pending";
+  };
+
+  const customer: Customer | null = dbCustomer?.data ? {
+    id: dbCustomer.data._id,
+    name: dbCustomer.data.businessName || dbCustomer.data.name || "Unnamed Business",
+    code: dbCustomer.data.taxId || dbCustomer.data.user?._id || "",
+    contactName: dbCustomer.data.name || "No Contact Name",
+    contactEmail: dbCustomer.data.email || "",
+    phone: dbCustomer.data.phone || "",
+    businessType: dbCustomer.data.businessType || "Retail",
+    registeredDate: dbCustomer.data.createdAt ? new Date(dbCustomer.data.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }) : "",
+    ordersCount: 0,
+    totalSpent: 0,
+    status: mapBackendStatus(dbCustomer.data.isAdminVerified),
+    address: dbCustomer.data.address || "",
+  } : null;
+
+  const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
 
   const handleInputChange = (productId: string, value: string) => {
     setCustomPrices((prev) => ({
@@ -409,12 +434,46 @@ export default function CustomerDetailPage({ params }: PageProps) {
     alert("Pricing overrides saved successfully!");
   };
 
-  const handleDelete = () => {
+  const handleApprove = async () => {
+    if (!customer) return;
+    try {
+      await verifyCustomer({ id: customer.id, status: "approved" }).unwrap();
+      alert("Customer approved successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.data?.message || err?.message || "Failed to approve customer");
+    }
+  };
+
+  const handleReject = async () => {
+    if (!customer) return;
+    const reason = prompt(
+      "Enter reason for rejection:",
+      "Business information could not be verified",
+    );
+    if (reason === null) return;
+    try {
+      await verifyCustomer({ id: customer.id, status: "rejected", reason }).unwrap();
+      alert("Customer rejected successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.data?.message || err?.message || "Failed to reject customer");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!customer) return;
     if (
       confirm(`Are you sure you want to delete customer: ${customer.name}?`)
     ) {
-      alert("Customer deleted successfully (Mock action).");
-      router.push("/dashboard/customers");
+      try {
+        await deleteCustomer(customer.id).unwrap();
+        alert("Customer deleted successfully!");
+        router.push("/dashboard/customers");
+      } catch (err: any) {
+        console.error(err);
+        alert(err?.data?.message || err?.message || "Failed to delete customer");
+      }
     }
   };
 
@@ -433,6 +492,47 @@ export default function CustomerDetailPage({ params }: PageProps) {
       status: "Completed",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-24 font-nunito">
+        <svg
+          className="animate-spin h-8 w-8 text-brand-primary"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <div className="p-8 text-center font-nunito">
+        <p className="text-slate-500">Customer not found.</p>
+        <Link
+          href="/dashboard/customers"
+          className="text-[#C4202B] mt-4 inline-block hover:underline"
+        >
+          Back to Customers
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">
@@ -740,13 +840,30 @@ export default function CustomerDetailPage({ params }: PageProps) {
               <h2 className="text-base font-nunito-bold text-slate-800 mb-4">
                 Actions
               </h2>
-              <button
-                onClick={handleDelete}
-                className="w-full py-3 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-xl font-nunito-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
-              >
-                <DeleteIcon size={14} color="currentColor" />
-                <span>Delete Customer</span>
-              </button>
+              {customer.status === "Pending" ? (
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleApprove}
+                    className="w-full py-3 bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] rounded-xl font-nunito-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] select-none"
+                  >
+                    <span>Approve Account</span>
+                  </button>
+                  <button
+                    onClick={handleReject}
+                    className="w-full py-3 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-xl font-nunito-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] select-none"
+                  >
+                    <span>Reject Account</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleDelete}
+                  className="w-full py-3 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-xl font-nunito-semibold text-sm flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  <DeleteIcon size={14} color="currentColor" />
+                  <span>Delete Customer</span>
+                </button>
+              )}
             </div>
 
             {/* Order History Card */}
