@@ -20,6 +20,70 @@ import {
   useVerifyCustomerMutation,
   useDeleteCustomerMutation,
 } from "@/store/api/customerApi";
+import {
+  useGetCustomerOrderMetaQuery,
+  useGetAllOrdersQuery,
+} from "@/store/api/orderApi";
+
+const formatLastOrderDate = (dateString?: string | null) => {
+  if (!dateString) return "—";
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch (e) {
+    return "—";
+  }
+};
+
+const getStatusBadge = (status: string) => {
+  switch (status.toLowerCase()) {
+    case "delivered":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
+          delivered
+        </span>
+      );
+    case "received":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
+          received
+        </span>
+      );
+    case "confirmed":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-blue-50 text-blue-600 border border-blue-100">
+          confirmed
+        </span>
+      );
+    case "preparing":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-indigo-50 text-indigo-600 border border-indigo-100">
+          preparing
+        </span>
+      );
+    case "cancelled":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+          cancelled
+        </span>
+      );
+    case "rejected":
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+          rejected
+        </span>
+      );
+    default:
+      return (
+        <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-slate-50 text-slate-600 border border-slate-200">
+          {status}
+        </span>
+      );
+  }
+};
 
 interface Customer {
   id: string;
@@ -36,177 +100,6 @@ interface Customer {
   address: string;
 }
 
-const mockCustomers: Customer[] = [
-  {
-    id: "1",
-    name: "Bosphorus Restaurant Group",
-    code: "US-1734567890",
-    contactName: "James Wilson",
-    contactEmail: "james@bosphorus-restaurant.com",
-    phone: "+1 (212) 555-1234",
-    businessType: "Restaurant",
-    registeredDate: "Jan 15, 2026",
-    ordersCount: 24,
-    totalSpent: 48550,
-    status: "Approved",
-    address: "350 Fifth Ave, New York, NY 10118",
-  },
-  {
-    id: "2",
-    name: "Grand Hotel New York",
-    code: "US-9876543210",
-    contactName: "Sarah Chen",
-    contactEmail: "procurement@grandhotelny.com",
-    phone: "+1 (212) 555-5678",
-    businessType: "Hotel",
-    registeredDate: "Feb 3, 2028",
-    ordersCount: 18,
-    totalSpent: 32400,
-    status: "Approved",
-    address: "109 W 57th St, New York, NY 10019",
-  },
-  {
-    id: "3",
-    name: "Brooklyn Artisan Kitchen",
-    code: "US-1122334455",
-    contactName: "Marco Rossi",
-    contactEmail: "marco@brooklynartisan.com",
-    phone: "+1 (718) 555-2345",
-    businessType: "Restaurant",
-    registeredDate: "Feb 20, 2028",
-    ordersCount: 2,
-    totalSpent: 384.8,
-    status: "Approved",
-    address: "88 Atlantic Ave, Brooklyn, NY 11201",
-  },
-  {
-    id: "4",
-    name: "Manhattan Food Distributors",
-    code: "US-5544332211",
-    contactName: "David Kim",
-    contactEmail: "david@mfdistributors.com",
-    phone: "+1 (212) 555-9012",
-    businessType: "Distributor / Wholesaler",
-    registeredDate: "Jan 8, 2026",
-    ordersCount: 35,
-    totalSpent: 87500,
-    status: "Approved",
-    address: "123 Washington St, New York, NY 10006",
-  },
-  {
-    id: "5",
-    name: "The Blue Butcher Shop",
-    code: "US-6677889900",
-    contactName: "Emily Carter",
-    contactEmail: "emily@bluebutcher.com",
-    phone: "+1 (648) 555-3456",
-    businessType: "Butcher Shop",
-    registeredDate: "Mar 10, 2026",
-    ordersCount: 9,
-    totalSpent: 18200,
-    status: "Approved",
-    address: "75 9th Ave, New York, NY 10011",
-  },
-  {
-    id: "6",
-    name: "City Catering Services",
-    code: "US-2233445566",
-    contactName: "Robert Davis",
-    contactEmail: "robert@citycatering.com",
-    phone: "+1 (212) 555-7890",
-    businessType: "Catering Company",
-    registeredDate: "Jul 8, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-    address: "420 Lexington Ave, New York, NY 10170",
-  },
-  {
-    id: "7",
-    name: "Harbor View Restaurant",
-    code: "US-3344556677",
-    contactName: "Lisa Park",
-    contactEmail: "lisa@harborview.com",
-    phone: "+1 (917) 555-1122",
-    businessType: "Restaurant",
-    registeredDate: "Jul 10, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-    address: "17 Battery Pl, New York, NY 10004",
-  },
-  {
-    id: "8",
-    name: "Uptown Steakhouse LLC",
-    code: "US-4455667788",
-    contactName: "Michael Brown",
-    contactEmail: "mbrown@uptownsteak.com",
-    phone: "+1 (212) 555-3344",
-    businessType: "Restaurant",
-    registeredDate: "Jul 11, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-    address: "10 Columbus Cir, New York, NY 10019",
-  },
-  {
-    id: "9",
-    name: "Jersey Fresh Market",
-    code: "US-7788990011",
-    contactName: "Anna Thompson",
-    contactEmail: "anna@jerseyfresh.com",
-    phone: "+1 (201) 555-5566",
-    businessType: "Supermarket / Grocery",
-    registeredDate: "Jul 12, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-    address: "201 Marin Blvd, Jersey City, NJ 07302",
-  },
-  {
-    id: "10",
-    name: "Queens Food Hub",
-    code: "US-8899001122",
-    contactName: "Carlos Martinez",
-    contactEmail: "carlos@queensfoodhub.com",
-    phone: "+1 (718) 555-8677",
-    businessType: "Distributor / Wholesaler",
-    registeredDate: "Jul 13, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-    address: "47-30 35th St, Long Island City, NY 11101",
-  },
-  {
-    id: "11",
-    name: "Riverside Café & Bistro",
-    code: "US-9900112233",
-    contactName: "Jennifer Lee",
-    contactEmail: "jen@riversidecafe.com",
-    phone: "+1 (212) 555-8899",
-    businessType: "Café",
-    registeredDate: "Jun 1, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Rejected",
-    address: "2500 Broadway, New York, NY 10024",
-  },
-  {
-    id: "12",
-    name: "Old Town Diner",
-    code: "US-1100223344",
-    contactName: "Frank Miller",
-    contactEmail: "frank@oldtowndiner.com",
-    phone: "+1 (718) 555-0011",
-    businessType: "Restaurant",
-    registeredDate: "Jun 10, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Rejected",
-    address: "161-11 Jamaica Ave, Jamaica, NY 11432",
-  },
-];
-
 interface Product {
   id: string;
   name: string;
@@ -214,175 +107,6 @@ interface Product {
   code: string;
   defaultPrice: number;
 }
-
-const productsList: Product[] = [
-  {
-    id: "1",
-    name: "Beef Tenderloin",
-    category: "Beef",
-    code: "BT",
-    defaultPrice: 38.5,
-  },
-  {
-    id: "2",
-    name: "Diced Beef",
-    category: "Beef",
-    code: "DB",
-    defaultPrice: 29.8,
-  },
-  {
-    id: "3",
-    name: "Ground Beef",
-    category: "Beef",
-    code: "GB",
-    defaultPrice: 24.8,
-  },
-  {
-    id: "4",
-    name: "Ribeye Steak",
-    category: "Beef",
-    code: "RS",
-    defaultPrice: 42.0,
-  },
-  {
-    id: "5",
-    name: "Beef Chops",
-    category: "Beef",
-    code: "RC",
-    defaultPrice: 35.6,
-  },
-  {
-    id: "6",
-    name: "Chicken Breast",
-    category: "Chicken",
-    code: "CB",
-    defaultPrice: 11.2,
-  },
-  {
-    id: "7",
-    name: "Whole Chicken",
-    category: "Chicken",
-    code: "WC",
-    defaultPrice: 8.8,
-  },
-  {
-    id: "8",
-    name: "Chicken Thighs",
-    category: "Chicken",
-    code: "CT",
-    defaultPrice: 10.5,
-  },
-  {
-    id: "9",
-    name: "Chicken Wings",
-    category: "Chicken",
-    code: "CW",
-    defaultPrice: 8.8,
-  },
-  {
-    id: "10",
-    name: "Lamb Leg",
-    category: "Lamb",
-    code: "LL",
-    defaultPrice: 54.0,
-  },
-  {
-    id: "11",
-    name: "Lamb Shoulder",
-    category: "Lamb",
-    code: "LS",
-    defaultPrice: 48.5,
-  },
-  {
-    id: "12",
-    name: "Lamb Ribs",
-    category: "Lamb",
-    code: "LR",
-    defaultPrice: 46.0,
-  },
-  {
-    id: "13",
-    name: "Frozen Beef",
-    category: "Frozen",
-    code: "FB",
-    defaultPrice: 22.5,
-  },
-  {
-    id: "14",
-    name: "Frozen Chicken Breast",
-    category: "Frozen",
-    code: "FC",
-    defaultPrice: 7.8,
-  },
-  {
-    id: "15",
-    name: "Frozen Lamb",
-    category: "Frozen",
-    code: "FL",
-    defaultPrice: 41.0,
-  },
-  {
-    id: "16",
-    name: "Beef Sausage",
-    category: "Processed",
-    code: "BS",
-    defaultPrice: 22.8,
-  },
-  {
-    id: "17",
-    name: "Butcher's Meatballs",
-    category: "Processed",
-    code: "BM",
-    defaultPrice: 20.0,
-  },
-  {
-    id: "18",
-    name: "Cured Beef (Pastirma)",
-    category: "Processed",
-    code: "CB",
-    defaultPrice: 38.0,
-  },
-];
-
-const initialCustomPrices: Record<string, Record<string, string>> = {
-  "3": {
-    "1": "38.50",
-    "2": "29.80",
-    "3": "24.90",
-    "4": "42.00",
-    "5": "35.60",
-    "6": "11.20",
-    "7": "9.80",
-    "8": "10.50",
-    "9": "8.90",
-    "10": "54.00",
-    "11": "49.50",
-    "12": "46.00",
-    "13": "22.50",
-    "14": "7.80",
-    "15": "41.00",
-    "16": "22.80",
-    "17": "20.00",
-    "18": "38.00",
-  },
-};
-
-const getCategoryBadgeClass = (category: string) => {
-  switch (category) {
-    case "Beef":
-      return "bg-[#FEF2F2] text-[#DC2626] border border-[#FEE2E2]";
-    case "Chicken":
-      return "bg-[#FFFBEB] text-[#D97706] border border-[#FEF3C7]";
-    case "Lamb":
-      return "bg-[#F5F3FF] text-[#7C3AED] border border-[#EDE9FE]";
-    case "Frozen":
-      return "bg-[#ECFEFF] text-[#0891B2] border border-[#CFFAFE]";
-    case "Processed":
-      return "bg-[#FEFCE8] text-[#CA8A04] border border-[#FEF9C3]";
-    default:
-      return "bg-slate-50 text-slate-600 border border-slate-100";
-  }
-};
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -392,9 +116,17 @@ export default function CustomerDetailPage({ params }: PageProps) {
   const router = useRouter();
   const { id } = use(params);
 
-  const { data: dbCustomer, isLoading } = useGetSingleCustomerQuery(id);
+  const { data: dbCustomer, isLoading: isCustomerLoading } =
+    useGetSingleCustomerQuery(id);
+  const { data: metaResponse, isLoading: isMetaLoading } =
+    useGetCustomerOrderMetaQuery(id);
+  const { data: ordersResponse, isLoading: isOrdersLoading } =
+    useGetAllOrdersQuery({ customer: id });
+
   const [verifyCustomer] = useVerifyCustomerMutation();
   const [deleteCustomer] = useDeleteCustomerMutation();
+
+  const isLoading = isCustomerLoading || isMetaLoading;
 
   const [activeTab, setActiveTab] = useState<"info" | "pricing">("info");
 
@@ -427,19 +159,6 @@ export default function CustomerDetailPage({ params }: PageProps) {
         address: dbCustomer.data.address || "",
       }
     : null;
-
-  const [customPrices, setCustomPrices] = useState<Record<string, string>>({});
-
-  const handleInputChange = (productId: string, value: string) => {
-    setCustomPrices((prev) => ({
-      ...prev,
-      [productId]: value,
-    }));
-  };
-
-  const handleSavePrices = () => {
-    alert("Pricing overrides saved successfully!");
-  };
 
   const handleApprove = async () => {
     if (!customer) return;
@@ -490,21 +209,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
     }
   };
 
-  // Mock Order History based on customer
-  const mockOrders = [
-    {
-      id: "#OE-2026-005",
-      date: "Jun 20, 2026",
-      total: 284.0,
-      status: "Cancelled",
-    },
-    {
-      id: "#OE-2026-006",
-      date: "Jul 5, 2026",
-      total: 384.8,
-      status: "Completed",
-    },
-  ];
+  // Real orders retrieved from API
 
   if (isLoading) {
     return (
@@ -594,7 +299,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </svg>
           </div>
           <p className="text-xl font-nunito-bold text-slate-800 leading-tight">
-            {customer.id === "3" ? 2 : customer.ordersCount || 0}
+            {metaResponse?.data?.totalOrders ?? 0}
           </p>
           <p className="text-xs font-nunito-medium text-slate-500 mt-1">
             Total Orders
@@ -618,11 +323,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </svg>
           </div>
           <p className="text-xl font-nunito-bold text-slate-800 leading-tight">
-            {customer.id === "3"
-              ? 1
-              : customer.ordersCount > 0
-                ? Math.max(1, customer.ordersCount - 2)
-                : 0}
+            {metaResponse?.data?.completed ?? 0}
           </p>
           <p className="text-xs font-nunito-medium text-slate-500 mt-1">
             Completed
@@ -647,7 +348,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </svg>
           </div>
           <p className="text-xl font-nunito-bold text-slate-800 leading-tight">
-            {`$${(customer.id === "3" ? 384.8 : customer.totalSpent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            {`$${(metaResponse?.data?.totalSpend ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </p>
           <p className="text-xs font-nunito-medium text-slate-500 mt-1">
             Total Spend
@@ -674,11 +375,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
             </svg>
           </div>
           <p className="text-xl font-nunito-bold text-slate-800 leading-tight">
-            {customer.id === "3"
-              ? "Jul 9, 2026"
-              : customer.ordersCount > 0
-                ? "Jun 28, 2026"
-                : "—"}
+            {formatLastOrderDate(metaResponse?.data?.lastOrder)}
           </p>
           <p className="text-xs font-nunito-medium text-slate-500 mt-1">
             Last Order
@@ -698,7 +395,7 @@ export default function CustomerDetailPage({ params }: PageProps) {
         >
           Business Information
         </button>
-        <button
+        {/* <button
           onClick={() => setActiveTab("pricing")}
           className={`py-3 text-sm font-nunito-semibold border-b-2 transition-all duration-200 cursor-pointer ${
             activeTab === "pricing"
@@ -707,11 +404,11 @@ export default function CustomerDetailPage({ params }: PageProps) {
           }`}
         >
           Customer Pricing
-        </button>
+        </button> */}
       </div>
 
       {/* Main Tab Panels */}
-      {activeTab === "info" ? (
+      {activeTab === "info" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Business Information Details */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -868,157 +565,48 @@ export default function CustomerDetailPage({ params }: PageProps) {
               <h2 className="text-base font-nunito-bold text-slate-800 mb-4">
                 Order History
               </h2>
-              {customer.status !== "Approved" || customer.id !== "3" ? (
+              {isOrdersLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-brand-primary"></div>
+                </div>
+              ) : !ordersResponse?.data?.result ||
+                ordersResponse.data.result.length === 0 ? (
                 <p className="text-sm font-nunito text-slate-400 py-4 text-center">
                   No order history records found.
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {mockOrders.map((order) => (
+                  {ordersResponse.data.result.map((order) => (
                     <div
-                      key={order.id}
+                      key={order._id}
                       className="flex items-center justify-between pb-3.5 border-b border-slate-50 last:border-b-0 last:pb-0"
                     >
                       <div>
                         <p className="text-sm font-nunito-bold text-slate-700">
-                          {order.id}
+                          {order.orderNumber || `#${order._id.substring(0, 8)}`}
                         </p>
                         <p className="text-[10px] font-nunito text-slate-400 mt-0.5">
-                          {order.date}
+                          {new Date(order.createdAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            },
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-nunito-bold text-slate-700">
-                          {`$${order.total.toFixed(2)}`}
+                          {`$${(order.totalPrice || 0).toFixed(2)}`}
                         </span>
-                        {order.status === "Completed" ? (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
-                            completed
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
-                            cancelled
-                          </span>
-                        )}
+                        {getStatusBadge(order.status)}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      ) : (
-        /* Customer Pricing Tab Placeholder */
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-base font-nunito-bold text-slate-800">
-                Custom Product Pricing
-              </h2>
-              <p className="text-xs font-nunito text-slate-400 mt-1">
-                Set individual prices for this customer. Leave empty to use the
-                default price.
-              </p>
-            </div>
-            <button
-              onClick={handleSavePrices}
-              className="flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm active:scale-[0.98] shrink-0"
-            >
-              <SaveIcon size={14} color="currentColor" />
-              <span>Save Prices</span>
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[600px]">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="pb-3 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider pl-1">
-                    Product
-                  </th>
-                  <th className="pb-3 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="pb-3 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right">
-                    Default Price
-                  </th>
-                  <th className="pb-3 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-6">
-                    Customer Price
-                  </th>
-                  <th className="pb-3 text-[11px] font-nunito-bold text-slate-400 uppercase tracking-wider text-right pr-1">
-                    Custom Input
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {productsList.map((product) => {
-                  const customPrice = customPrices[product.id] || "";
-                  const finalPrice =
-                    customPrice !== ""
-                      ? parseFloat(customPrice)
-                      : product.defaultPrice;
-
-                  return (
-                    <tr
-                      key={product.id}
-                      className="hover:bg-slate-50 transition-all duration-150"
-                    >
-                      {/* Product Name */}
-                      <td className="py-3.5 pl-1">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center font-nunito-bold text-xs uppercase shrink-0 ${getCategoryBadgeClass(product.category)}`}
-                          >
-                            {product.code}
-                          </div>
-                          <span className="text-sm font-nunito-bold text-slate-700">
-                            {product.name}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Category */}
-                      <td className="py-3.5">
-                        <span className="text-sm font-nunito-medium text-slate-500">
-                          {product.category}
-                        </span>
-                      </td>
-
-                      {/* Default Price */}
-                      <td className="py-3.5 text-right">
-                        <span className="text-sm font-nunito text-slate-400">
-                          ${product.defaultPrice.toFixed(2)}
-                        </span>
-                      </td>
-
-                      {/* Customer Price */}
-                      <td className="py-3.5 text-right pr-6">
-                        <span className="text-sm font-nunito-semibold text-slate-700">
-                          $
-                          {isNaN(finalPrice)
-                            ? product.defaultPrice.toFixed(2)
-                            : finalPrice.toFixed(2)}
-                        </span>
-                      </td>
-
-                      {/* Custom Input */}
-                      <td className="py-3.5 text-right pr-1">
-                        <input
-                          type="text"
-                          value={customPrice}
-                          onChange={(e) =>
-                            handleInputChange(product.id, e.target.value)
-                          }
-                          placeholder={product.defaultPrice.toFixed(2)}
-                          className="w-24 px-3 py-1.5 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-right text-slate-700 bg-white transition-all shadow-sm"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
         </div>
       )}

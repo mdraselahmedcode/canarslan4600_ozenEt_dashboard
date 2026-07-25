@@ -78,6 +78,19 @@ export interface SingleOrderResponse {
   data: OrderData;
 }
 
+export interface CustomerOrderMeta {
+  totalOrders: number;
+  completed: number;
+  totalSpend: number;
+  lastOrder: string | null;
+}
+
+export interface CustomerOrderMetaResponse {
+  success: boolean;
+  message: string;
+  data: CustomerOrderMeta;
+}
+
 export const orderApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getAllOrders: builder.query<
@@ -140,6 +153,16 @@ export const orderApi = baseApi.injectEndpoints({
         { type: "Order", id: "LIST" },
       ],
     }),
+    getCustomerOrderMeta: builder.query<CustomerOrderMetaResponse, string>({
+      query: (customerId) => ({
+        url: `/order/customer-order-meta/${customerId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, customerId) => [
+        { type: "Order", id: `META_${customerId}` },
+        { type: "Order", id: "LIST" },
+      ],
+    }),
   }),
   overrideExisting: false,
 });
@@ -148,4 +171,5 @@ export const {
   useGetAllOrdersQuery,
   useGetSingleOrderQuery,
   useUpdateOrderStatusMutation,
+  useGetCustomerOrderMetaQuery,
 } = orderApi;
