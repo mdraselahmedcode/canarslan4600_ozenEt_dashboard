@@ -74,7 +74,8 @@ export default function ProductsPage() {
     limit,
     searchTerm: debouncedSearch,
     category: categoryFilter === "All" ? undefined : categoryFilter,
-    availability: statusFilter === "All" ? undefined : mapUiStatusToApi(statusFilter),
+    availability:
+      statusFilter === "All" ? undefined : mapUiStatusToApi(statusFilter),
   });
 
   // Query all to calculate exact counts across the whole database
@@ -95,7 +96,8 @@ export default function ProductsPage() {
   // Form States
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [availability, setAvailability] = useState<Product["availability"]>("In Stock");
+  const [availability, setAvailability] =
+    useState<Product["availability"]>("In Stock");
   const [defaultPrice, setDefaultPrice] = useState("");
   const [unit, setUnit] = useState("per_kg");
   const [packSize, setPackSize] = useState("");
@@ -106,7 +108,9 @@ export default function ProductsPage() {
 
   // Delete Modal States
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(
+    null,
+  );
 
   const categories: Product[] = useMemo(() => {
     return (apiData?.data?.result || []).map((p) => ({
@@ -117,7 +121,12 @@ export default function ProductsPage() {
       defaultPrice: p.price,
       unit: p.unit,
       packSize: p.packSize,
-      availability: p.availability === "in_stock" ? "In Stock" : p.availability === "limited_stock" ? "Limited" : "Out of Stock",
+      availability:
+        p.availability === "in_stock"
+          ? "In Stock"
+          : p.availability === "limited_stock"
+            ? "Limited"
+            : "Out of Stock",
       description: p.description,
       image: p.image,
       isFeatured: p.isFeatured,
@@ -177,7 +186,11 @@ export default function ProductsPage() {
         }
       } catch (err: any) {
         console.error("Delete error:", err);
-        alert(err?.data?.message || err?.message || "An error occurred while deleting.");
+        alert(
+          err?.data?.message ||
+            err?.message ||
+            "An error occurred while deleting.",
+        );
       } finally {
         setIsSaving(false);
         setIsDeleteModalOpen(false);
@@ -227,7 +240,11 @@ export default function ProductsPage() {
       await updateProductStatus(id).unwrap();
     } catch (err: any) {
       console.error("Toggle status error:", err);
-      alert(err?.data?.message || err?.message || "Failed to update product status.");
+      alert(
+        err?.data?.message ||
+          err?.message ||
+          "Failed to update product status.",
+      );
     } finally {
       setTogglingId(null);
     }
@@ -256,14 +273,19 @@ export default function ProductsPage() {
         JSON.stringify({
           name,
           category,
-          availability: availability === "In Stock" ? "in_stock" : availability === "Limited" ? "limited_stock" : "out_of_stock",
+          availability:
+            availability === "In Stock"
+              ? "in_stock"
+              : availability === "Limited"
+                ? "limited_stock"
+                : "out_of_stock",
           price: priceNum,
           description: description || "Fresh meat product",
           unit,
           packSize: packSize || "1 kg",
           isFeatured: editingProduct ? editingProduct.isFeatured : true,
           isActive: editingProduct ? editingProduct.isActive : true,
-        })
+        }),
       );
 
       if (modalMode === "add") {
@@ -286,16 +308,24 @@ export default function ProductsPage() {
       }
     } catch (err: any) {
       console.error("Save error:", err);
-      alert(err?.data?.message || err?.message || "An error occurred while saving.");
+      alert(
+        err?.data?.message || err?.message || "An error occurred while saving.",
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
   // Stats Counters
-  const countInStock = allProductsList.filter((p) => p.availability === "in_stock").length;
-  const countLimited = allProductsList.filter((p) => p.availability === "limited_stock").length;
-  const countOutOfStock = allProductsList.filter((p) => p.availability === "out_of_stock").length;
+  const countInStock = allProductsList.filter(
+    (p) => p.availability === "in_stock",
+  ).length;
+  const countLimited = allProductsList.filter(
+    (p) => p.availability === "limited_stock",
+  ).length;
+  const countOutOfStock = allProductsList.filter(
+    (p) => p.availability === "out_of_stock",
+  ).length;
 
   // Filtered List is mapped to the categories array directly
   const filteredProducts = categories;
@@ -325,7 +355,9 @@ export default function ProductsPage() {
           <p className="text-3xl font-nunito-bold text-[#16A34A] leading-tight">
             {countInStock}
           </p>
-          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">In Stock</p>
+          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">
+            In Stock
+          </p>
         </div>
 
         {/* Limited Stock */}
@@ -333,7 +365,9 @@ export default function ProductsPage() {
           <p className="text-3xl font-nunito-bold text-[#D97706] leading-tight">
             {countLimited}
           </p>
-          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">Limited Stock</p>
+          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">
+            Limited Stock
+          </p>
         </div>
 
         {/* Out of Stock */}
@@ -341,7 +375,9 @@ export default function ProductsPage() {
           <p className="text-3xl font-nunito-bold text-[#DC2626] leading-tight">
             {countOutOfStock}
           </p>
-          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">Out of Stock</p>
+          <p className="text-xs font-nunito-semibold text-slate-500 mt-2">
+            Out of Stock
+          </p>
         </div>
       </div>
 
@@ -447,11 +483,15 @@ export default function ProductsPage() {
       {isGetLoading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
-          <p className="text-slate-400 text-xs font-nunito mt-4">Loading products...</p>
+          <p className="text-slate-400 text-xs font-nunito mt-4">
+            Loading products...
+          </p>
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
-          <p className="text-slate-400 text-sm font-nunito">No products found.</p>
+          <p className="text-slate-400 text-sm font-nunito">
+            No products found.
+          </p>
         </div>
       ) : (
         <>
@@ -569,11 +609,13 @@ export default function ProductsPage() {
                           onClick={() => handleToggleStatus(p.id)}
                           disabled={togglingId === p.id}
                           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            p.isActive
-                              ? "bg-brand-primary"
-                              : "bg-slate-200"
+                            p.isActive ? "bg-brand-primary" : "bg-slate-200"
                           } ${togglingId === p.id ? "opacity-60 cursor-not-allowed" : ""}`}
-                          title={p.isActive ? "Deactivate Product" : "Activate Product"}
+                          title={
+                            p.isActive
+                              ? "Deactivate Product"
+                              : "Activate Product"
+                          }
                         >
                           <span
                             className={`pointer-events-none flex items-center justify-center h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
@@ -581,9 +623,24 @@ export default function ProductsPage() {
                             }`}
                           >
                             {togglingId === p.id && (
-                              <svg className="animate-spin h-2.5 w-2.5 text-brand-primary" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              <svg
+                                className="animate-spin h-2.5 w-2.5 text-brand-primary"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                />
                               </svg>
                             )}
                           </span>
@@ -594,7 +651,9 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 text-right pr-8">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => router.push(`/dashboard/products/${p.id}`)}
+                            onClick={() =>
+                              router.push(`/dashboard/products/${p.id}`)
+                            }
                             className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm"
                             title="View Details"
                           >
@@ -628,16 +687,28 @@ export default function ProductsPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 bg-white border border-slate-100 rounded-2xl shadow-sm mt-4">
               {/* Left: Range and Info */}
               <div className="text-xs font-nunito-medium text-slate-500">
-                Showing <span className="font-nunito-bold text-slate-700">{Math.min((currentPage - 1) * limit + 1, totalItems)}</span> to{" "}
-                <span className="font-nunito-bold text-slate-700">{Math.min(currentPage * limit, totalItems)}</span> of{" "}
-                <span className="font-nunito-bold text-slate-700">{totalItems}</span> entries
+                Showing{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {Math.min((currentPage - 1) * limit + 1, totalItems)}
+                </span>{" "}
+                to{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {Math.min(currentPage * limit, totalItems)}
+                </span>{" "}
+                of{" "}
+                <span className="font-nunito-bold text-slate-700">
+                  {totalItems}
+                </span>{" "}
+                entries
               </div>
 
               {/* Right: Controls & Limit Select */}
               <div className="flex items-center gap-6">
                 {/* Limit Selector */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-nunito-medium text-slate-500">Show:</span>
+                  <span className="text-xs font-nunito-medium text-slate-500">
+                    Show:
+                  </span>
                   <div className="relative flex items-center">
                     <select
                       value={limit}
@@ -653,8 +724,18 @@ export default function ProductsPage() {
                       <option value={50}>50</option>
                     </select>
                     <div className="absolute right-2.5 pointer-events-none text-slate-400">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -669,35 +750,59 @@ export default function ProductsPage() {
                     className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
                     title="Previous Page"
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 19l-7-7 7-7"
+                      />
                     </svg>
                   </button>
 
                   {/* Page Numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
-                        p === currentPage
-                          ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
-                          : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (p) => (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`w-8 h-8 rounded-lg text-xs font-nunito-bold transition-all duration-200 ${
+                          p === currentPage
+                            ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/10"
+                            : "border border-slate-200 hover:bg-slate-50 text-slate-600 bg-white"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
 
                   {/* Next Button */}
                   <button
                     disabled={currentPage === totalPages}
-                    onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 flex items-center justify-center transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-not-allowed bg-white"
                     title="Next Page"
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    <svg
+                      className="w-4.5 h-4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -755,7 +860,9 @@ export default function ProductsPage() {
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-3">
                       <button
                         type="button"
-                        onClick={() => document.getElementById("product-file-input")?.click()}
+                        onClick={() =>
+                          document.getElementById("product-file-input")?.click()
+                        }
                         className="px-3.5 py-2 bg-white text-slate-700 rounded-xl text-xs font-nunito-semibold shadow hover:bg-slate-50 cursor-pointer"
                       >
                         Change
@@ -776,7 +883,9 @@ export default function ProductsPage() {
                   <div
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
-                    onClick={() => document.getElementById("product-file-input")?.click()}
+                    onClick={() =>
+                      document.getElementById("product-file-input")?.click()
+                    }
                     className="border-2 border-dashed border-slate-200 hover:border-slate-300 rounded-2xl bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group"
                   >
                     <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-400 group-hover:text-slate-500 transition-colors shadow-sm bg-white">
@@ -832,8 +941,18 @@ export default function ProductsPage() {
                       ))}
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -846,7 +965,11 @@ export default function ProductsPage() {
                   <div className="relative flex items-center">
                     <select
                       value={availability}
-                      onChange={(e) => setAvailability(e.target.value as Product["availability"])}
+                      onChange={(e) =>
+                        setAvailability(
+                          e.target.value as Product["availability"],
+                        )
+                      }
                       className="appearance-none w-full pl-4 pr-10 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-600 bg-white transition-all shadow-sm cursor-pointer"
                     >
                       <option value="In Stock">In Stock</option>
@@ -854,8 +977,18 @@ export default function ProductsPage() {
                       <option value="Out of Stock">Out of Stock</option>
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -892,8 +1025,18 @@ export default function ProductsPage() {
                       <option value="per_lb">per lb</option>
                     </select>
                     <div className="absolute right-4 pointer-events-none text-slate-400">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -943,7 +1086,11 @@ export default function ProductsPage() {
                 disabled={isSaving}
                 className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white rounded-xl text-sm font-nunito-semibold transition-all duration-200 cursor-pointer shadow-sm shadow-brand-primary/10 active:scale-[0.98] disabled:opacity-50"
               >
-                {isSaving ? "Saving..." : modalMode === "add" ? "Add Product" : "Update Product"}
+                {isSaving
+                  ? "Saving..."
+                  : modalMode === "add"
+                    ? "Add Product"
+                    : "Update Product"}
               </button>
             </div>
           </div>
@@ -986,7 +1133,10 @@ export default function ProductsPage() {
               <p className="text-sm font-nunito text-slate-600">
                 Are you sure you want to delete the product{" "}
                 <span className="font-nunito-bold text-slate-800">
-                  {filteredProducts.find((p) => p.id === deletingProductId)?.name}
+                  {
+                    filteredProducts.find((p) => p.id === deletingProductId)
+                      ?.name
+                  }
                 </span>
                 ? This action cannot be undone.
               </p>

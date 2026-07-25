@@ -13,14 +13,15 @@ import {
   BellIcon,
   SettingsIcon,
   LogoutIcon,
+  MailIcon,
 } from "@/components/icons";
+import { useGetDashboardMetaQuery, useGetNotificationsQuery } from "@/store/api/metaApi";
 
 interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
   activeIcon: React.ReactNode;
-  badge?: number;
 }
 
 const navItems: NavItem[] = [
@@ -35,7 +36,6 @@ const navItems: NavItem[] = [
     href: "/dashboard/customers",
     icon: <DoubleManIcon size={18} color="rgba(255,255,255,0.5)" />,
     activeIcon: <DoubleManIcon size={18} color="#FFFFFF" />,
-    badge: 5,
   },
   {
     label: "Categories",
@@ -54,7 +54,6 @@ const navItems: NavItem[] = [
     href: "/dashboard/orders",
     icon: <TotalOrdersIcon size={18} color="rgba(255,255,255,0.5)" />,
     activeIcon: <TotalOrdersIcon size={18} color="#FFFFFF" />,
-    badge: 2,
   },
   {
     label: "Notifications",
@@ -63,6 +62,12 @@ const navItems: NavItem[] = [
       <BellIcon size={18} color="rgba(255,255,255,0.5)" strokeWidth={1.35} />
     ),
     activeIcon: <BellIcon size={18} color="#FFFFFF" strokeWidth={1.35} />,
+  },
+  {
+    label: "Support",
+    href: "/dashboard/support",
+    icon: <MailIcon size={18} color="rgba(255,255,255,0.5)" />,
+    activeIcon: <MailIcon size={18} color="#FFFFFF" />,
   },
   {
     label: "Settings",
@@ -76,9 +81,30 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Load live counts dynamically with background updates every 15 seconds
+  const { data: metaResponse } = useGetDashboardMetaQuery(undefined, {
+    pollingInterval: 15000,
+  });
+
+  // Live notification unread count
+  const { data: notifResponse } = useGetNotificationsQuery(undefined, {
+    pollingInterval: 15000,
+  });
+
+  const unverifiedCustomers = metaResponse?.data?.unVerifiedCustomer || 0;
+  const pendingOrders = metaResponse?.data?.pendingOrder || 0;
+  const unreadNotifications = notifResponse?.data?.meta?.unreadCount || 0;
+
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
+  };
+
+  const getBadgeCount = (label: string) => {
+    if (label === "Customers") return unverifiedCustomers;
+    if (label === "Orders") return pendingOrders;
+    if (label === "Notifications") return unreadNotifications;
+    return 0;
   };
 
   const handleSignOut = () => {
@@ -119,6 +145,8 @@ export function Sidebar() {
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const active = isActive(item.href);
+          const badgeCount = getBadgeCount(item.label);
+
           return (
             <Link
               key={item.href}
@@ -133,7 +161,7 @@ export function Sidebar() {
                 {active ? item.activeIcon : item.icon}
               </span>
               <span className="flex-1 truncate">{item.label}</span>
-              {item.badge && (
+              {badgeCount > 0 && (
                 <span
                   className={`min-w-[20px] h-[20px] flex items-center justify-center rounded-full text-[10px] font-nunito-bold px-1.5 ${
                     active
@@ -141,7 +169,7 @@ export function Sidebar() {
                       : "bg-brand-primary text-white"
                   }`}
                 >
-                  {item.badge}
+                  {badgeCount}
                 </span>
               )}
             </Link>
