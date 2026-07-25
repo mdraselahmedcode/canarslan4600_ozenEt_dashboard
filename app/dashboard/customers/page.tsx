@@ -1,202 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { BuildingIcon, DeleteIcon, EyeIcon } from "@/components/icons";
-
-interface Customer {
-  id: string;
-  name: string;
-  code: string;
-  contactName: string;
-  contactEmail: string;
-  phone: string;
-  businessType: string;
-  registeredDate: string;
-  ordersCount: number;
-  totalSpent: number;
-  status: "Approved" | "Pending" | "Rejected";
-}
-
-const initialCustomers: any[] = [
-  {
-    id: "1",
-    name: "Bosphorus Restaurant Group",
-    code: "US-1734567890",
-    contactName: "James Wilson",
-    contactEmail: "james@bosphorus-restaurant.com",
-    phone: "+1 (212) 555-1234",
-    businessType: "Restaurant",
-    registeredDate: "Jan 15, 2026",
-    ordersCount: 24,
-    totalSpent: 48550,
-    status: "Approved",
-  },
-  {
-    id: "2",
-    name: "Grand Hotel New York",
-    code: "US-9876543210",
-    contactName: "Sarah Chen",
-    contactEmail: "procurement@grandhotelny.com",
-    phone: "+1 (212) 555-5678",
-    businessType: "Hotel",
-    registeredDate: "Feb 3, 2028",
-    ordersCount: 18,
-    totalSpent: 32400,
-    status: "Approved",
-  },
-  {
-    id: "3",
-    name: "Brooklyn Artisan Kitchen",
-    code: "US-1122334455",
-    contactName: "Marco Rossi",
-    contactEmail: "marco@brooklynartisan.com",
-    phone: "+1 (718) 555-2345",
-    businessType: "Restaurant",
-    registeredDate: "Feb 20, 2026",
-    ordersCount: 12,
-    totalSpent: 21600,
-    status: "Approved",
-  },
-  {
-    id: "4",
-    name: "Manhattan Food Distributors",
-    code: "US-5544332211",
-    contactName: "David Kim",
-    contactEmail: "david@mfdistributors.com",
-    phone: "+1 (212) 555-9012",
-    businessType: "Distributor / Wholesaler",
-    registeredDate: "Jan 8, 2026",
-    ordersCount: 35,
-    totalSpent: 87500,
-    status: "Approved",
-  },
-  {
-    id: "5",
-    name: "The Blue Butcher Shop",
-    code: "US-6677889900",
-    contactName: "Emily Carter",
-    contactEmail: "emily@bluebutcher.com",
-    phone: "+1 (648) 555-3456",
-    businessType: "Butcher Shop",
-    registeredDate: "Mar 10, 2026",
-    ordersCount: 9,
-    totalSpent: 18200,
-    status: "Approved",
-  },
-  {
-    id: "6",
-    name: "City Catering Services",
-    code: "US-2233445566",
-    contactName: "Robert Davis",
-    contactEmail: "robert@citycatering.com",
-    phone: "+1 (212) 555-7890",
-    businessType: "Catering Company",
-    registeredDate: "Jul 8, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-  },
-  {
-    id: "7",
-    name: "Harbor View Restaurant",
-    code: "US-3344556677",
-    contactName: "Lisa Park",
-    contactEmail: "lisa@harborview.com",
-    phone: "+1 (917) 555-1122",
-    businessType: "Restaurant",
-    registeredDate: "Jul 10, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-  },
-  {
-    id: "8",
-    name: "Uptown Steakhouse LLC",
-    code: "US-4455667788",
-    contactName: "Michael Brown",
-    contactEmail: "mbrown@uptownsteak.com",
-    phone: "+1 (212) 555-3344",
-    businessType: "Restaurant",
-    registeredDate: "Jul 11, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-  },
-  {
-    id: "9",
-    name: "Jersey Fresh Market",
-    code: "US-7788990011",
-    contactName: "Anna Thompson",
-    contactEmail: "anna@jerseyfresh.com",
-    phone: "+1 (201) 555-5566",
-    businessType: "Supermarket / Grocery",
-    registeredDate: "Jul 12, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-  },
-  {
-    id: "10",
-    name: "Queens Food Hub",
-    code: "US-8899001122",
-    contactName: "Carlos Martinez",
-    contactEmail: "carlos@queensfoodhub.com",
-    phone: "+1 (718) 555-8677",
-    businessType: "Distributor / Wholesaler",
-    registeredDate: "Jul 13, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Pending",
-  },
-  {
-    id: "11",
-    name: "Riverside Café & Bistro",
-    code: "US-9900112233",
-    contactName: "Jennifer Lee",
-    contactEmail: "jen@riversidecafe.com",
-    phone: "+1 (212) 555-8899",
-    businessType: "Café",
-    registeredDate: "Jun 1, 2028",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Rejected",
-  },
-  {
-    id: "12",
-    name: "Old Town Diner",
-    code: "US-1100223344",
-    contactName: "Frank Miller",
-    contactEmail: "frank@oldtowndiner.com",
-    phone: "+1 (718) 555-0011",
-    businessType: "Restaurant",
-    registeredDate: "Jun 10, 2026",
-    ordersCount: 0,
-    totalSpent: 0,
-    status: "Rejected",
-  },
-];
-
-import { useEffect } from "react";
+import { BuildingIcon, DeleteIcon, EyeIcon, CheckInCircleIcon } from "@/components/icons";
 import {
   useGetAllCustomersQuery,
   useVerifyCustomerMutation,
   useDeleteCustomerMutation,
 } from "@/store/api/customerApi";
 
+type VerifyStatus = "All" | "Approved" | "Pending" | "Rejected";
+
+interface ConfirmModal {
+  type: "approve" | "reject" | "delete";
+  customerId: string;
+  customerName: string;
+}
+
 export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState<
-    "All" | "Approved" | "Pending" | "Rejected"
-  >("All");
+  const [selectedFilter, setSelectedFilter] = useState<VerifyStatus>("All");
+  const [confirmModal, setConfirmModal] = useState<ConfirmModal | null>(null);
+  const [rejectReason, setRejectReason] = useState("Business information could not be verified");
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 400);
+    const handler = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(handler);
   }, [searchTerm]);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const { data: dbCustomers, isLoading } = useGetAllCustomersQuery({
     searchTerm: debouncedSearch || undefined,
@@ -206,198 +46,132 @@ export default function CustomersPage() {
   const [verifyCustomer] = useVerifyCustomerMutation();
   const [deleteCustomer] = useDeleteCustomerMutation();
 
-  const handleApprove = async (id: string) => {
-    try {
-      await verifyCustomer({ id, status: "approved" }).unwrap();
-      alert("Customer approved successfully!");
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.data?.message || err?.message || "Failed to approve customer");
-    }
-  };
+  const showToast = (msg: string, type: "success" | "error") => setToast({ msg, type });
 
-  const handleReject = async (id: string) => {
-    const reason = prompt(
-      "Enter reason for rejection:",
-      "Business information could not be verified",
-    );
-    if (reason === null) return;
-    try {
-      await verifyCustomer({ id, status: "rejected", reason }).unwrap();
-      alert("Customer rejected successfully!");
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.data?.message || err?.message || "Failed to reject customer");
-    }
-  };
+  const handleConfirmAction = async () => {
+    if (!confirmModal) return;
+    const { type, customerId } = confirmModal;
+    setProcessingId(customerId);
+    setConfirmModal(null);
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this customer?")) {
-      try {
-        await deleteCustomer(id).unwrap();
-        alert("Customer deleted successfully!");
-      } catch (err: any) {
-        console.error(err);
-        alert(
-          err?.data?.message || err?.message || "Failed to delete customer",
-        );
+    try {
+      if (type === "approve") {
+        await verifyCustomer({ id: customerId, status: "approved" }).unwrap();
+        showToast("Customer approved successfully!", "success");
+      } else if (type === "reject") {
+        await verifyCustomer({ id: customerId, status: "rejected", reason: rejectReason }).unwrap();
+        showToast("Customer rejected.", "success");
+      } else if (type === "delete") {
+        await deleteCustomer(customerId).unwrap();
+        showToast("Customer deleted.", "success");
       }
+    } catch (err: any) {
+      showToast(err?.data?.message || err?.message || "Operation failed.", "error");
+    } finally {
+      setProcessingId(null);
+      setRejectReason("Business information could not be verified");
     }
   };
 
-  const mapBackendStatus = (isAdminVerified: boolean): Customer["status"] => {
-    return isAdminVerified ? "Approved" : "Pending";
+  const mapStatus = (isAdminVerified: boolean | undefined, userIsActive?: boolean): VerifyStatus => {
+    if (isAdminVerified === true) return "Approved";
+    if (isAdminVerified === false && userIsActive === false) return "Rejected";
+    return "Pending";
   };
 
-  const customers: Customer[] =
-    dbCustomers?.data?.result?.map((cust) => ({
-      id: cust._id,
-      name: cust.businessName || cust.name || "Unnamed Business",
-      code: cust.taxId || cust.user?._id || "",
-      contactName: cust.name || "No Contact Name",
-      contactEmail: cust.email || "",
-      phone: cust.phone || "",
-      businessType: cust.businessType || "Retail",
-      registeredDate: cust.createdAt
-        ? new Date(cust.createdAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })
-        : "",
-      ordersCount: 0,
-      totalSpent: 0,
-      status: mapBackendStatus(cust.isAdminVerified),
-    })) || [];
+  const customers = dbCustomers?.data?.result?.map((cust) => ({
+    id: cust._id,
+    name: cust.businessName || cust.name || "Unnamed Business",
+    code: cust.taxId || "",
+    contactName: cust.name || "—",
+    contactEmail: cust.email || "—",
+    phone: cust.phone || "—",
+    businessType: cust.businessType || "—",
+    profileImage: cust.profile_image,
+    registeredDate: cust.createdAt
+      ? new Date(cust.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—",
+    status: mapStatus(cust.isAdminVerified, (cust.user as any)?.isActive),
+    isAdminVerified: cust.isAdminVerified,
+  })) || [];
 
-  // Count items for Stats Grid
   const countApproved = customers.filter((c) => c.status === "Approved").length;
   const countPending = customers.filter((c) => c.status === "Pending").length;
   const countRejected = customers.filter((c) => c.status === "Rejected").length;
 
-  // Filtered List
-  const filteredCustomers = customers.filter((c) => {
-    // Status Filter
-    const matchesStatus =
-      selectedFilter === "All" || c.status === selectedFilter;
-    return matchesStatus;
-  });
+  const filteredCustomers = customers.filter(
+    (c) => selectedFilter === "All" || c.status === selectedFilter
+  );
 
   return (
     <div className="p-8">
-      {/* Header */}
+      {/* ── Toast ── */}
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl text-sm font-nunito-semibold transition-all animate-in fade-in slide-in-from-top-2 duration-300 ${
+            toast.type === "success"
+              ? "bg-emerald-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.type === "success" ? "✓" : "✕"} {toast.msg}
+        </div>
+      )}
+
+      {/* ── Header ── */}
       <div className="mb-8">
         <h1 className="text-2xl font-nunito-bold text-slate-800">Customers</h1>
         <p className="text-sm font-nunito text-slate-500 mt-1">
-          {`${customers.length} total businesses`}
+          {customers.length} total registered businesses
         </p>
       </div>
 
-      {/* KPI Stats Grid */}
+      {/* ── KPI Stats ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Approved Card */}
-        <div
-          onClick={() =>
-            setSelectedFilter(
-              selectedFilter === "Approved" ? "All" : "Approved",
-            )
-          }
-          className={`p-6 rounded-2xl border bg-[#F0FDF4]/65 cursor-pointer hover:shadow-md transition-all duration-200 ${
-            selectedFilter === "Approved"
-              ? "border-[#22C55E] ring-1 ring-[#22C55E]"
-              : "border-[#DCFCE7]"
-          }`}
-        >
-          <div className="flex flex-col">
-            <span className="text-3xl font-nunito-bold text-[#16A34A] leading-none mb-2">
-              {countApproved}
-            </span>
-            <span className="text-xs font-nunito-bold text-[#16A34A] uppercase tracking-wider">
-              Approved
-            </span>
+        {[
+          { label: "Approved", count: countApproved, filter: "Approved" as VerifyStatus, bg: "bg-[#F0FDF4]/65", border: "border-[#DCFCE7]", activeBorder: "border-[#22C55E] ring-1 ring-[#22C55E]", text: "text-[#16A34A]" },
+          { label: "Pending Approval", count: countPending, filter: "Pending" as VerifyStatus, bg: "bg-[#FFFBEB]/65", border: "border-[#FEF3C7]", activeBorder: "border-[#D97706] ring-1 ring-[#D97706]", text: "text-[#D97706]" },
+          { label: "Rejected", count: countRejected, filter: "Rejected" as VerifyStatus, bg: "bg-[#FEF2F2]/65", border: "border-[#FEE2E2]", activeBorder: "border-[#DC2626] ring-1 ring-[#DC2626]", text: "text-[#DC2626]" },
+        ].map(({ label, count, filter, bg, border, activeBorder, text }) => (
+          <div
+            key={filter}
+            onClick={() => setSelectedFilter(selectedFilter === filter ? "All" : filter)}
+            className={`p-6 rounded-2xl border ${bg} cursor-pointer hover:shadow-md transition-all duration-200 ${selectedFilter === filter ? activeBorder : border}`}
+          >
+            <div className="flex flex-col">
+              <span className={`text-3xl font-nunito-bold ${text} leading-none mb-2`}>{count}</span>
+              <span className={`text-xs font-nunito-bold ${text} uppercase tracking-wider`}>{label}</span>
+            </div>
           </div>
-        </div>
-
-        {/* Pending Approval Card */}
-        <div
-          onClick={() =>
-            setSelectedFilter(selectedFilter === "Pending" ? "All" : "Pending")
-          }
-          className={`p-6 rounded-2xl border bg-[#FFFBEB]/65 cursor-pointer hover:shadow-md transition-all duration-200 ${
-            selectedFilter === "Pending"
-              ? "border-[#D97706] ring-1 ring-[#D97706]"
-              : "border-[#FEF3C7]"
-          }`}
-        >
-          <div className="flex flex-col">
-            <span className="text-3xl font-nunito-bold text-[#D97706] leading-none mb-2">
-              {countPending}
-            </span>
-            <span className="text-xs font-nunito-bold text-[#D97706] uppercase tracking-wider">
-              Pending Approval
-            </span>
-          </div>
-        </div>
-
-        {/* Rejected Card */}
-        <div
-          onClick={() =>
-            setSelectedFilter(
-              selectedFilter === "Rejected" ? "All" : "Rejected",
-            )
-          }
-          className={`p-6 rounded-2xl border bg-[#FEF2F2]/65 cursor-pointer hover:shadow-md transition-all duration-200 ${
-            selectedFilter === "Rejected"
-              ? "border-[#DC2626] ring-1 ring-[#DC2626]"
-              : "border-[#FEE2E2]"
-          }`}
-        >
-          <div className="flex flex-col">
-            <span className="text-3xl font-nunito-bold text-[#DC2626] leading-none mb-2">
-              {countRejected}
-            </span>
-            <span className="text-xs font-nunito-bold text-[#DC2626] uppercase tracking-wider">
-              Rejected
-            </span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filter Options & Search bar */}
+      {/* ── Search & Filter ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex-1 max-w-md relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </div>
             <input
               type="text"
-              placeholder="Search by company, contact, or email..."
+              placeholder="Search by company or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all text-sm text-slate-800 placeholder:text-slate-400 bg-white"
             />
           </div>
-
           <div className="flex items-center gap-4">
             <div className="relative">
               <select
                 value={selectedFilter}
-                onChange={(e) =>
-                  setSelectedFilter(e.target.value as typeof selectedFilter)
-                }
+                onChange={(e) => setSelectedFilter(e.target.value as VerifyStatus)}
                 className="appearance-none pl-4 pr-10 py-2.5 border border-slate-200 rounded-xl bg-white text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-brand-primary cursor-pointer font-nunito"
               >
                 <option value="All">All Statuses</option>
@@ -406,224 +180,265 @@ export default function CustomersPage() {
                 <option value="Rejected">Rejected</option>
               </select>
               <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
-                <svg
-                  width="10"
-                  height="6"
-                  viewBox="0 0 10 6"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M1 1L5 5L9 1"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+                  <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
             <span className="text-xs font-nunito-semibold text-slate-400 shrink-0">
-              {`${filteredCustomers.length} customer${filteredCustomers.length !== 1 ? "s" : ""}`}
+              {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? "s" : ""}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Customers Table Container */}
+      {/* ── Table ── */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary"></div>
-            <p className="text-slate-400 text-xs font-nunito mt-4">
-              Loading customers...
-            </p>
+            <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-brand-primary" />
+            <p className="text-slate-400 text-xs font-nunito mt-4">Loading customers...</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-50">
-                  <th className="text-left px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Company
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Business Type
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Registered
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Orders
-                  </th>
-                  <th className="text-left px-4 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="text-right px-6 py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  {["Company", "Contact", "Phone", "Business Type", "Registered", "Status", "Actions"].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`py-4 text-[11px] font-nunito-semibold text-slate-400 uppercase tracking-wider ${i === 0 ? "text-left px-6" : i === 6 ? "text-right px-6" : "text-left px-4"}`}
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="text-center py-10 text-sm font-nunito text-slate-400"
-                    >
+                    <td colSpan={7} className="text-center py-16 text-sm font-nunito text-slate-400">
                       No customers found matching the criteria.
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((customer) => (
-                    <tr
-                      key={customer.id}
-                      className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50 transition-colors"
-                    >
-                      {/* Company Column */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
-                            <BuildingIcon size={14} color="currentColor" />
+                  filteredCustomers.map((customer) => {
+                    const isProcessing = processingId === customer.id;
+
+                    return (
+                      <tr
+                        key={customer.id}
+                        className={`border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors ${isProcessing ? "opacity-60 pointer-events-none" : ""}`}
+                      >
+                        {/* Company */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {customer.profileImage ? (
+                              <img
+                                src={customer.profileImage}
+                                alt={customer.name}
+                                className="w-8 h-8 rounded-lg object-cover border border-slate-100"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <BuildingIcon size={14} color="currentColor" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-sm font-nunito-bold text-slate-700 leading-tight">{customer.name}</p>
+                              {customer.code && (
+                                <p className="text-[11px] font-nunito text-slate-400 mt-0.5">{customer.code}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
-                              {customer.name}
-                            </p>
-                            <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                              {customer.code}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Contact Column */}
-                      <td className="px-4 py-4">
-                        <div>
-                          <p className="text-sm font-nunito-semibold text-slate-700 leading-tight">
-                            {customer.contactName}
-                          </p>
-                          <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                            {customer.contactEmail}
-                          </p>
-                        </div>
-                      </td>
+                        {/* Contact */}
+                        <td className="px-4 py-4">
+                          <p className="text-sm font-nunito-semibold text-slate-700 leading-tight">{customer.contactName}</p>
+                          <p className="text-[11px] font-nunito text-slate-400 mt-0.5">{customer.contactEmail}</p>
+                        </td>
 
-                      {/* Phone Column */}
-                      <td className="px-4 py-4">
-                        <span className="text-sm font-nunito text-slate-500">
-                          {customer.phone}
-                        </span>
-                      </td>
+                        {/* Phone */}
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-nunito text-slate-500">{customer.phone}</span>
+                        </td>
 
-                      {/* Business Type Column */}
-                      <td className="px-4 py-4">
-                        <span className="text-sm font-nunito text-slate-500">
-                          {customer.businessType}
-                        </span>
-                      </td>
+                        {/* Business Type */}
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-nunito text-slate-500 capitalize">{customer.businessType}</span>
+                        </td>
 
-                      {/* Registered Date Column */}
-                      <td className="px-4 py-4">
-                        <span className="text-sm font-nunito text-slate-500">
-                          {customer.registeredDate}
-                        </span>
-                      </td>
+                        {/* Registered */}
+                        <td className="px-4 py-4">
+                          <span className="text-sm font-nunito text-slate-500">{customer.registeredDate}</span>
+                        </td>
 
-                      {/* Orders/Total Revenue Column */}
-                      <td className="px-4 py-4">
-                        {customer.status === "Approved" ? (
-                          <div>
-                            <p className="text-sm font-nunito-bold text-slate-700 leading-tight">
-                              {customer.ordersCount}
-                            </p>
-                            <p className="text-[11px] font-nunito text-slate-400 mt-0.5">
-                              {`$${customer.totalSpent.toLocaleString()}`}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-sm font-nunito text-slate-400">
-                            —
-                          </span>
-                        )}
-                      </td>
+                        {/* Status */}
+                        <td className="px-4 py-4">
+                          {isProcessing ? (
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3.5 h-3.5 border-2 border-brand-primary border-t-transparent rounded-full animate-spin" />
+                              <span className="text-[10px] font-nunito text-slate-400">Processing...</span>
+                            </div>
+                          ) : customer.status === "Approved" ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
+                              ✓ Approved
+                            </span>
+                          ) : customer.status === "Pending" ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
+                              • Pending
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
+                              ✕ Rejected
+                            </span>
+                          )}
+                        </td>
 
-                      {/* Status Column */}
-                      <td className="px-4 py-4">
-                        {customer.status === "Approved" && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-emerald-50 text-[#16A34A] border border-[#DCFCE7]">
-                            Approved
-                          </span>
-                        )}
-                        {customer.status === "Pending" && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-amber-50 text-[#D97706] border border-[#FEF3C7]">
-                            Pending
-                          </span>
-                        )}
-                        {customer.status === "Rejected" && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-nunito-bold bg-red-50 text-[#DC2626] border border-[#FEE2E2]">
-                            Rejected
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Actions Column */}
-                      <td className="px-6 py-4 text-right">
-                        {customer.status === "Pending" ? (
+                        {/* Actions */}
+                        <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/dashboard/customers/${customer.id}`}
                               title="View Customer"
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
+                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all cursor-pointer flex items-center justify-center"
                             >
                               <EyeIcon size={14} color="currentColor" />
                             </Link>
+
+                            {customer.status === "Pending" && (
+                              <>
+                                <button
+                                  onClick={() => setConfirmModal({ type: "approve", customerId: customer.id, customerName: customer.name })}
+                                  title="Approve Customer"
+                                  className="flex items-center gap-1 text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] rounded-lg transition-all cursor-pointer"
+                                >
+                                  <CheckInCircleIcon size={13} color="currentColor" />
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setRejectReason("Business information could not be verified");
+                                    setConfirmModal({ type: "reject", customerId: customer.id, customerName: customer.name });
+                                  }}
+                                  title="Reject Customer"
+                                  className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-lg transition-all cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+
+                            {customer.status === "Approved" && (
+                              <button
+                                onClick={() => setConfirmModal({ type: "reject", customerId: customer.id, customerName: customer.name })}
+                                title="Revoke Approval"
+                                className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-lg transition-all cursor-pointer"
+                              >
+                                Revoke
+                              </button>
+                            )}
+
                             <button
-                              onClick={() => handleApprove(customer.id)}
-                              className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#F0FDF4] hover:bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] rounded-lg transition-all duration-200 cursor-pointer animate-pulse"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(customer.id)}
-                              className="text-[11px] font-nunito-bold px-2.5 py-1.5 bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FCA5A5] rounded-lg transition-all duration-200 cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/dashboard/customers/${customer.id}`}
-                              title="View Customer"
-                              className="p-1.5 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg border border-slate-200 transition-all duration-200 cursor-pointer flex items-center justify-center"
-                            >
-                              <EyeIcon size={14} color="currentColor" />
-                            </Link>
-                            <button
-                              onClick={() => handleDelete(customer.id)}
+                              onClick={() => setConfirmModal({ type: "delete", customerId: customer.id, customerName: customer.name })}
                               title="Delete Customer"
-                              className="p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-lg border border-red-200 transition-all duration-200 cursor-pointer"
+                              className="p-1.5 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-lg border border-red-100 hover:border-red-200 transition-all cursor-pointer"
                             >
                               <DeleteIcon size={14} color="currentColor" />
                             </button>
                           </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* ── Confirmation Modal ── */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-50">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl border border-slate-100 mx-4 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+            {/* Modal Header */}
+            <div className={`p-6 pb-4 border-b border-slate-50 ${confirmModal.type === "approve" ? "bg-emerald-50/40" : "bg-red-50/40"}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${
+                  confirmModal.type === "approve" ? "bg-emerald-100" : "bg-red-100"
+                }`}>
+                  {confirmModal.type === "approve" ? "✓" : confirmModal.type === "reject" ? "✕" : "🗑"}
+                </div>
+                <div>
+                  <h2 className="text-base font-nunito-bold text-slate-800">
+                    {confirmModal.type === "approve"
+                      ? "Approve Customer"
+                      : confirmModal.type === "reject"
+                      ? "Reject Customer"
+                      : "Delete Customer"}
+                  </h2>
+                  <p className="text-xs font-nunito text-slate-500 mt-0.5">{confirmModal.customerName}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {confirmModal.type === "approve" && (
+                <p className="text-sm font-nunito text-slate-600 leading-relaxed">
+                  This will grant <span className="font-nunito-bold text-slate-800">{confirmModal.customerName}</span> access to the platform. They will be able to place orders immediately.
+                </p>
+              )}
+              {confirmModal.type === "reject" && (
+                <>
+                  <p className="text-sm font-nunito text-slate-600 leading-relaxed">
+                    Please provide a reason for rejecting <span className="font-nunito-bold text-slate-800">{confirmModal.customerName}</span>.
+                  </p>
+                  <div>
+                    <label className="block text-xs font-nunito-bold text-slate-500 uppercase tracking-wider mb-2">
+                      Rejection Reason
+                    </label>
+                    <textarea
+                      value={rejectReason}
+                      onChange={(e) => setRejectReason(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-slate-200 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 focus:outline-none rounded-xl text-sm font-nunito text-slate-700 bg-white transition-all resize-none"
+                      placeholder="Enter reason..."
+                    />
+                  </div>
+                </>
+              )}
+              {confirmModal.type === "delete" && (
+                <p className="text-sm font-nunito text-slate-600 leading-relaxed">
+                  Are you sure you want to permanently delete <span className="font-nunito-bold text-slate-800">{confirmModal.customerName}</span>? This action cannot be undone.
+                </p>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 pt-2 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-nunito-semibold transition-all cursor-pointer bg-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmAction}
+                className={`px-5 py-2.5 rounded-xl text-sm font-nunito-semibold text-white transition-all cursor-pointer active:scale-[0.98] shadow-sm ${
+                  confirmModal.type === "approve"
+                    ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200"
+                    : "bg-red-600 hover:bg-red-700 shadow-red-200"
+                }`}
+              >
+                {confirmModal.type === "approve" ? "Approve" : confirmModal.type === "reject" ? "Reject" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

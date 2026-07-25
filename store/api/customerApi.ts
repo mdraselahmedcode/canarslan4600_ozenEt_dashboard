@@ -92,8 +92,8 @@ export const customerApi = baseApi.injectEndpoints({
     >({
       query: ({ id, status, reason }) => ({
         url: `/customer/admin-verification/${id}`,
-        method: "POST",
-        body: { status, reason },
+        method: "PATCH",
+        body: reason ? { status, reason } : { status },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "Customer", id },
