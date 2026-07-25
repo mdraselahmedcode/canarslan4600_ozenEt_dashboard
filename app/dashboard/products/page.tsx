@@ -85,6 +85,7 @@ export default function ProductsPage() {
   const [updateProduct] = useUpdateProductMutation();
   const [deleteProduct] = useDeleteProductMutation();
   const [updateProductStatus] = useUpdateProductStatusMutation();
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Add/Edit Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,11 +222,14 @@ export default function ProductsPage() {
   };
 
   const handleToggleStatus = async (id: string) => {
+    setTogglingId(id);
     try {
       await updateProductStatus(id).unwrap();
     } catch (err: any) {
       console.error("Toggle status error:", err);
       alert(err?.data?.message || err?.message || "Failed to update product status.");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -563,18 +567,26 @@ export default function ProductsPage() {
                       <td className="px-6 py-4 text-center">
                         <button
                           onClick={() => handleToggleStatus(p.id)}
+                          disabled={togglingId === p.id}
                           className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                             p.isActive
                               ? "bg-brand-primary"
                               : "bg-slate-200"
-                          }`}
+                          } ${togglingId === p.id ? "opacity-60 cursor-not-allowed" : ""}`}
                           title={p.isActive ? "Deactivate Product" : "Activate Product"}
                         >
                           <span
-                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            className={`pointer-events-none flex items-center justify-center h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
                               p.isActive ? "translate-x-4" : "translate-x-0"
                             }`}
-                          />
+                          >
+                            {togglingId === p.id && (
+                              <svg className="animate-spin h-2.5 w-2.5 text-brand-primary" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                              </svg>
+                            )}
+                          </span>
                         </button>
                       </td>
 
