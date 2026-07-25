@@ -386,12 +386,17 @@ export default function OrdersPage() {
     return matchesStatus;
   });
 
-  // Calculate dynamic stats
-  const countPending = orders.filter((o) => o.status === "Pending").length;
-  const countConfirmed = orders.filter((o) => o.status === "Confirmed").length;
-  const countPreparing = orders.filter((o) => o.status === "Preparing").length;
-  const countDelivered = orders.filter((o) => o.status === "Delivered").length;
-  const countCancelled = orders.filter((o) => o.status === "Cancelled").length;
+  // Stats directly from backend query meta counts
+  const backendData = dbOrders?.data;
+  const countPending = backendData?.pendingOrders ?? backendData?.receivedOrder ?? 0;
+  const countPreparing = backendData?.totalPreparing ?? 0;
+  const countDelivered = backendData?.totalDelivered ?? 0;
+  const countCancelled = backendData?.totalCancelled ?? 0;
+  const countConfirmed = backendData?.confirmedOrders ?? 
+                         backendData?.totalConfirmed ?? 
+                         Math.max(0, (backendData?.totalOrder ?? 0) - 
+                          (countPending + countPreparing + countDelivered + countCancelled));
+  const totalOrdersCount = backendData?.totalOrder ?? orders.length;
 
   // Revenue (Delivered orders sum)
   const deliveredRevenue = orders
@@ -404,7 +409,7 @@ export default function OrdersPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-nunito-bold text-slate-800">Orders</h1>
         <p className="text-sm font-nunito text-slate-500 mt-1">
-          {orders.length} total orders
+          {totalOrdersCount} total orders
         </p>
       </div>
 
