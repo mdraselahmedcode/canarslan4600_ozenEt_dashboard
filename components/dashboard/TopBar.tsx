@@ -3,10 +3,16 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BellIcon, SettingsIcon, LogoutIcon } from "@/components/icons";
+import { useGetNotificationsQuery } from "@/store/api/metaApi";
 
 export function TopBar() {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { data: dbNotifications } = useGetNotificationsQuery(undefined, {
+    pollingInterval: 15000,
+  });
+
+  const unreadCount = dbNotifications?.data?.meta?.unreadCount || 0;
 
   return (
     <header className="h-[64px] bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0 z-30">
@@ -27,9 +33,11 @@ export function TopBar() {
           title="Notifications"
         >
           <BellIcon size={20} color="#64748B" strokeWidth={1.5} />
-          <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-brand-primary text-white text-[10px] font-nunito-bold rounded-full flex items-center justify-center shadow-sm">
-            2
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-[18px] h-[18px] bg-brand-primary text-white text-[10px] font-nunito-bold rounded-full flex items-center justify-center shadow-sm">
+              {unreadCount}
+            </span>
+          )}
         </button>
 
         {/* Divider */}

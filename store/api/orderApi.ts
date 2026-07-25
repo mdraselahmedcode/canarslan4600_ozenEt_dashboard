@@ -68,6 +68,14 @@ export interface OrdersResponse {
   message: string;
   data: {
     meta: Meta;
+    totalOrder?: number;
+    receivedOrder?: number;
+    pendingOrders?: number;
+    totalPreparing?: number;
+    totalDelivered?: number;
+    totalCancelled?: number;
+    confirmedOrders?: number;
+    totalConfirmed?: number;
     result: OrderData[];
   };
 }

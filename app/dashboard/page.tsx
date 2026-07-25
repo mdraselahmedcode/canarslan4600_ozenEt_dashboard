@@ -18,102 +18,7 @@ import { useGetAllCustomersQuery } from "@/store/api/customerApi";
 import { useGetAllProductsQuery } from "@/store/api/productApi";
 import { useGetAllCategoriesQuery } from "@/store/api/categoryApi";
 import { useGetAllOrdersQuery } from "@/store/api/orderApi";
-
-/* ------------------------------------------------------------------ */
-/*  Mock Data                                                          */
-/* ------------------------------------------------------------------ */
-
-const recentOrders = [
-  {
-    id: "#OE-2026-010",
-    customer: "Bosphorus Restaurant Group",
-    items: 4,
-    total: 246.5,
-    date: "Jun 28, 2026",
-    status: "Delivered",
-  },
-  {
-    id: "#OE-2026-009",
-    customer: "The Blue Butcher Shop",
-    items: 2,
-    total: 306.5,
-    date: "Ju 7, 2026",
-    status: "Confirmed",
-  },
-  {
-    id: "#OE-2026-008",
-    customer: "Manhattan Food Distributors",
-    items: 2,
-    total: 2050.0,
-    date: "Ju 12, 2026",
-    status: "Pending",
-  },
-  {
-    id: "#OE-2026-007",
-    customer: "Manhattan Food Distributors",
-    items: 3,
-    total: 1749.0,
-    date: "Ju 10, 2026",
-    status: "Preparing",
-  },
-  {
-    id: "#OE-2026-006",
-    customer: "Brooklyn Artisan Kitchen",
-    items: 2,
-    total: 384.8,
-    date: "Ju 5, 2026",
-    status: "Delivered",
-  },
-  {
-    id: "#OE-2026-005",
-    customer: "Brooklyn Artisan Kitchen",
-    items: 1,
-    total: 294.0,
-    date: "Jun 20, 2026",
-    status: "Cancelled",
-  },
-  {
-    id: "#OE-2026-004",
-    customer: "Grand Hotel New York",
-    items: 3,
-    total: 596.0,
-    date: "Ju 12, 2026",
-    status: "Pending",
-  },
-];
-
-const pendingApprovals = [
-  {
-    id: "6",
-    name: "City Catering Service",
-    type: "Catering Company",
-    date: "Jul 8, 2026",
-  },
-  {
-    id: "7",
-    name: "Harbor View Restauran",
-    type: "Restaurant",
-    date: "Jul 10, 2026",
-  },
-  {
-    id: "8",
-    name: "Uptown Steakhouse LL",
-    type: "Restaurant",
-    date: "Jul 11, 2026",
-  },
-  {
-    id: "9",
-    name: "Jersey Fresh Marke",
-    type: "Supermarket / Grocery",
-    date: "Jul 12, 2026",
-  },
-  {
-    id: "10",
-    name: "Queens Food Hub",
-    type: "Distributor / Wholesaler",
-    date: "Jul 13, 2026",
-  },
-];
+import { useGetDashboardMetaQuery } from "@/store/api/metaApi";
 
 /* ------------------------------------------------------------------ */
 /*  Status Badge                                                       */
@@ -161,38 +66,32 @@ export default function DashboardPage() {
   const { data: dbOrders, isLoading: isOrdersLoading } = useGetAllOrdersQuery({
     limit: 100,
   });
+  const { data: dbMeta, isLoading: isMetaLoading } = useGetDashboardMetaQuery();
 
   const isLoading =
     isCustomersLoading ||
     isProductsLoading ||
     isCategoriesLoading ||
-    isOrdersLoading;
+    isOrdersLoading ||
+    isMetaLoading;
 
   // Customers calculations
-  const totalCustomers = dbCustomers?.data?.result?.length || 0;
+  const totalCustomers = dbMeta?.data?.totalCustomer ?? 0;
   const pendingCustomers =
     dbCustomers?.data?.result?.filter((c) => !c.isAdminVerified) || [];
-  const pendingCustomersCount = pendingCustomers.length;
+  const pendingCustomersCount = dbMeta?.data?.unVerifiedCustomer ?? 0;
 
   // Products calculations
-  const totalProducts = dbProducts?.data?.result?.length || 0;
-  const outOfStockProductsCount =
-    dbProducts?.data?.result?.filter((p) => p.availability === "out_of_stock")
-      .length || 0;
+  const totalProducts = dbMeta?.data?.totalProduct ?? 0;
+  const outOfStockProductsCount = dbMeta?.data?.outOfStockProduct ?? 0;
   const totalCategories = dbCategories?.data?.result?.length || 0;
 
   // Orders calculations
   const allOrders = dbOrders?.data?.result || [];
-  const totalOrdersCount = allOrders.length;
-  const pendingOrdersCount = allOrders.filter(
-    (o) => o.status === "received",
-  ).length;
-  const deliveredOrdersCount = allOrders.filter(
-    (o) => o.status === "delivered",
-  ).length;
-  const totalRevenue = allOrders
-    .filter((o) => o.status === "delivered")
-    .reduce((sum, o) => sum + o.totalPrice, 0);
+  const totalOrdersCount = dbMeta?.data?.totalOrder ?? 0;
+  const pendingOrdersCount = dbMeta?.data?.pendingOrder ?? 0;
+  const deliveredOrdersCount = dbMeta?.data?.deliveredOrder ?? 0;
+  const totalRevenue = dbMeta?.data?.totalRevenue ?? 0;
 
   // Recent orders: pick top 7 latest orders
   const recentOrders = allOrders.slice(0, 7).map((ord) => ({

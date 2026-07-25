@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "frontend-complete",
+    "integration",
+    "integration-complete",
+    "main"
+  ],
+  "parent": {
+    "frontend-complete": "main",
+    "integration": "main",
+    "integration-complete": "integration",
+    "main": null
+  },
+  "order": [
+    "main",
+    "frontend-complete",
+    "integration",
+    "integration-complete"
+  ]
+}
